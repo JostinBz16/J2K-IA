@@ -1,0 +1,20 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>J2K - {% block title %} {% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="h-screen flex flex-col bg-gray-100">
+    <div class="text-center py-8">
+      <h1 class="text-4xl font-bold text-blue-600">J2K - IA</h1>
+    </div>
+    <div
+      class="text-center max-w-6xl flex flex-col justify-center items-center mx-auto"
+    >
+      {% block content %} {% endblock %}
+    </div>
+  </body>
+</html>

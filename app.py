@@ -1,8 +1,9 @@
 from flask import Flask, render_template, url_for, flash, redirect, jsonify
-from formsApp.form import FormSearchProduct
+from flask import Flask, render_template, url_for, flash, redirect
+from templates.formsApp.form import FormSearchProduct
 from models.producto import Producto
 from IAProcess.recognizeProduct import ProcessInformation
-from rankProcess.rankProduct import rankProduct
+from IAProcess.rankProcess.rankProduct import rankProduct
 
 app = Flask(__name__, static_folder='static')
 app.config['SECRET_KEY'] = 'KKJRE54573FSLKD*DF5FDLOLYSVVFW83472386JXT'
@@ -22,9 +23,14 @@ def search():
 
 @app.route('/products')
 def products():
+    data = [
+        {"id": 1, "nombre": "Producto A", "precio": 20, "calidad": 8, "ventas": 500},
+        {"id": 2, "nombre": "Producto B", "precio": 35, "calidad": 9, "ventas": 1500},
+        {"id": 3, "nombre": "Producto C", "precio": 15, "calidad": 6, "ventas": 200}
+    ]
     # Aquí podrías listar productos o mostrar detalles de un producto específico
-    resultado_dict = rankProduct()  # Llama a la función que genera el ranking
-    products = jsonify(resultado_dict)  # Devuelve el resultado como una respuesta JSON
+    products = rankProduct(data)  # Llama a la función que genera el ranking
+    # products = jsonify(resultado_dict)  # Devuelve el resultado como una respuesta JSON
     return render_template('products.html', productos = products)
 
 @app.route('/products/details/<int:id>')

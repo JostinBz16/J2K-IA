@@ -1,5 +1,40 @@
-{% extends "base.html" %}
-
-<title>{% block title %}Tu lista productos recomendados{% endblock %}</title>
-
-{% block content %} productos {% endblock %}
+{% extends "base.html" %} {% block title %}Tu lista de productos recomendados{%
+endblock %} {% block content %}
+<div class="container mx-auto py-8">
+  <h2 class="text-4xl font-bold text-center mb-8">Productos Recomendados</h2>
+  {% if productos %}
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for producto in productos %}
+    <div
+      class="bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700"
+    >
+      <a href="{{ producto.url_producto }}">
+        <img
+          class="rounded-t-lg w-full h-80 object-cover"
+          src="{{ producto.image_url }}"
+          alt="{{ producto.nombre }}"
+        />
+      </a>
+      <div class="p-5">
+        <a href="{{ producto.url_producto }}">
+          <h5
+            class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
+          >
+            {{ producto.nombre }}
+          </h5>
+        </a>
+        <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">
+          {{ producto.descripcion }}
+        </p>
+        <p class="text-xl font-semibold text-gray-900 dark:text-white">
+          {{ producto.precio }} USD
+        </p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <h2 class="text-center text-2xl">No se encontraron productos relacionados</h2>
+  {% endif %}
+</div>
+{% endblock %}

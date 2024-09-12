@@ -1,5 +1,5 @@
 from flask import Flask, render_template, url_for, flash, redirect
-from formsApp.form import FormSearchProduct
+from templates.formsApp.form import FormSearchProduct
 from models.producto import Producto
 from IAProcess.recognizeProduct import ProcessInformation
 

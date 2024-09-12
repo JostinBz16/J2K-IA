@@ -1,0 +1,8 @@
+Flask
+Flask-WTF
+WTForms
+spacy
+beautifulsoup4
+pandas
+numpy
+requests

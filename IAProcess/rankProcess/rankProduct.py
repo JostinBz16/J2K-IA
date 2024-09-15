@@ -2,11 +2,7 @@ import pandas as pd
 import numpy as np
 import json
 
-data = [
-        {"id": 1, "nombre": "Producto A", "precio": 20, "calidad": 8, "ventas": 500},
-        {"id": 2, "nombre": "Producto B", "precio": 35, "calidad": 9, "ventas": 1500},
-        {"id": 3, "nombre": "Producto C", "precio": 15, "calidad": 6, "ventas": 200}
-    ]
+
 def rankProduct(data):
     # Cargar los datos desde la variable JSON
     

@@ -2,8 +2,9 @@ from flask import Flask, render_template, url_for, flash, redirect, jsonify
 from flask import Flask, render_template, url_for, flash, redirect
 from templates.formsApp.form import FormSearchProduct
 from models.producto import Producto
-from IAProcess.recognizeProduct import ProcessInformation
+from IAProcess.recognizeProduct import ProcessInformation 
 from IAProcess.rankProcess.rankProduct import rankProduct
+from IAProcess.Web_Scrape.indexscrapping import scrapping
 
 app = Flask(__name__, static_folder='static')
 app.config['SECRET_KEY'] = 'KKJRE54573FSLKD*DF5FDLOLYSVVFW83472386JXT'
@@ -17,7 +18,9 @@ def search():
     form = FormSearchProduct()
     if form.validate_on_submit():
         flash(f'Form submitted successfully! Name: {form.productName.data}', 'success')
-        ProcessInformation(form.productName.data)
+        product = ProcessInformation(form.productName.data)
+        nombre_producto = product['nombre']
+        scrapping(nombre_producto)
         return redirect(url_for('products'))  # Redirige a una página de resultados
     return render_template('search.html', form=form)
 

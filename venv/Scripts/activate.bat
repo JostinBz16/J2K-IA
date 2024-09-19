@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\USUARIO\Desktop\J2k\J2K-IA\venv
+set VIRTUAL_ENV=C:\Users\Jostin\OneDrive\Documentos\Jostin\Programacion\python\J2kIA\venv
 
 if not defined PROMPT set PROMPT=$P$G
 

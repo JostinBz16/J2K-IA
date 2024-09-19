@@ -6,27 +6,26 @@
 <main class="bg-gray-100 w-full mt-32 flex items-center justify-center">
   <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
     <div>
-      <h1 class="text-2xl font-bold text-blue-600 mb-6 text-center">
-        Al utilizar J2K, tu búsqueda de productos se convierte en una
-        experiencia simple y confiable.
+      <h1 class="text-2xl font-bold text-blue-500 mb-6 text-center">
+        tu búsqueda se convierte en una experiencia simple y confiable al usar
+        J2K
       </h1>
       <p
-        class="text-sm font-semibold text-pretty text-gray-500 text-justify my-5"
+        class="text-md font-semibold text-pretty text-gray-500 text-justify my-5"
       >
-        Encuentra rápidamente el producto que necesitas y recibe recomendaciones
-        personalizadas basadas en parámetros clave como ventas y reputación del
-        vendedor. Nuestro sistema analiza y valida diferentes factores para
-        asegurarte de que tu compra sea la mejor decisión, evitando
-        arrepentimientos y garantizando una compra satisfactoria. Con J2K, tu
-        esfuerzo se reduce al mínimo y la confianza en tu elección aumenta al
-        máximo.
+        Por favor, describe el producto que estás buscando de la manera más
+        detallada posible. Incluye características clave como el tipo de
+        producto, marca, modelo, precio estimado, tamaño, color, calidad,
+        garantías, y cualquier otra especificación importante que pueda ayudarte
+        a encontrar la mejor opción. Mientras más detalles proporciones, más
+        precisa será la recomendación.
       </p>
     </div>
-    <form method="POST" action="{{ url_for('search') }}">
+    <form method="POST" action="{{ url_for('search') }}" class="mt-8">
       {{ form.hidden_tag() }}
       <div class="mb-4">
         {{ form.productName(class="shadow appearance-none border rounded w-full
-        py-2 px-3 text-gray-700 leading-tight focus:outline-none
+        py-2 px-3 text-gray-700 leading-tight focus:outline-none resize-none
         focus:shadow-outline") }}
       </div>
       <div class="text-center">

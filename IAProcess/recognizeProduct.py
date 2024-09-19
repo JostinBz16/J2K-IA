@@ -3,64 +3,162 @@ import spacy
 # Cargar el modelo de SpaCy para español
 nlp_es = spacy.load("es_core_news_sm")
 
+# Biblioteca de características ampliada y en minúsculas
+caracteristicas_biblioteca = {
+    "tamaño": {"cm", "metros", "pulgadas", "tamaño", "medida", "mida", "dimensiones"},
+    "color": {"color", "colores", "azul", "rojo", "verde", "negro", "blanco", "amarillo", "gris", "plateado"},
+    "peso": {"kg", "gramos", "peso", "libras"},
+    "ram": {"ram", "memoria", "gb"},
+    "almacenamiento": {"gb", "tb", "almacenamiento", "ssd", "hdd", "mb"},
+    "pantalla": {"pantalla", "hd", "full hd", "4k", "oled", "lcd", "ips", "oled"},
+    "garantía": {"garantía", "soporte", "servicio", "devolución", "devolucion", "años"},
+    "procesador": {"procesador", "cpu", "núcleo", "ghz"},
+    "componentes": {"gpu", "tarjeta gráfica", "placa base", "fuente", "ventilador"},
+    "velocidad": {"velocidad", "fps", "latencia", "refresh rate"},
+    "conectividad": {"bluetooth", "wifi", "ethernet", "usb", "hdmi"},
+    "batería": {"batería", "autonomía", "mah"},
+    "material": {"material", "plástico", "metal", "aluminio", "fibra", "cuero"},
+    "precio": {"precio", "precios", "valor", "usd", "eur", "cop", "pesos", "millon", "mil", "won", "dolares", "euro", "costo", "coste"}
+}
+
+# Función para determinar la categoría de una palabra clave
+def determinar_categoria(palabra_clave):
+    palabra_clave_lower = palabra_clave.lower()
+    for categoria, palabras in caracteristicas_biblioteca.items():
+        if palabra_clave_lower in palabras:
+            return categoria
+    return None
+
 # Función para procesar el enunciado
 def ProcessInformation(enunciado):
-    # Limpiar el diccionario antes de procesar un nuevo enunciado
     producto_caracteristicas = {
         "nombre": None,
         "caracteristicas": {}
     }
 
-    # Procesar el enunciado con el modelo de SpaCy
     doc = nlp_es(enunciado)
 
     producto = []
     caracteristica_actual = []
-    clave_actual = None
+    categoria_actual = None
+    en_caracteristicas = False  # Variable para detectar si hemos empezado con las características
 
-    # Palabras clave que típicamente indican el tipo de características
-    palabras_clave_caracteristicas = {"GB", "RAM", "almacenamiento", "color", "cm", "mida"}
+    it = iter(doc)
 
-    for palabra in doc:
-        print(palabra.text, palabra.pos_)  # Ver las etiquetas POS de cada palabra
+    palabras_clave_caracteristicas = set()
+    for palabras in caracteristicas_biblioteca.values():
+        palabras_clave_caracteristicas.update(palabras)
 
-        # Si encontramos una coma, es el fin de la característica actual
+    for palabra in it:
+        if palabra.text.lower() in {"y", "o", "pero", "sin", "sin embargo"}:
+            categoria_actual = None
+            en_caracteristicas = False
+            caracteristica_actual = []
+            continue
+
         if palabra.pos_ == "PUNCT":
-            if clave_actual and len(caracteristica_actual) > 0:
-                producto_caracteristicas["caracteristicas"][clave_actual] = " ".join(caracteristica_actual)
-                caracteristica_actual = []  # Limpiar para la siguiente característica
-            clave_actual = None
+            if categoria_actual and len(caracteristica_actual) > 0:
+                valor_caracteristica = " ".join(caracteristica_actual).strip()
+                if categoria_actual in producto_caracteristicas["caracteristicas"]:
+                    if categoria_actual == "componentes":
+                        producto_caracteristicas["caracteristicas"][categoria_actual].append(valor_caracteristica)
+                    else:
+                        producto_caracteristicas["caracteristicas"][categoria_actual] += f", {valor_caracteristica}"
+                else:
+                    if categoria_actual == "componentes":
+                        producto_caracteristicas["caracteristicas"][categoria_actual] = [valor_caracteristica]
+                    else:
+                        producto_caracteristicas["caracteristicas"][categoria_actual] = valor_caracteristica
+                caracteristica_actual = []
+            categoria_actual = None
+            en_caracteristicas = True
             continue
 
-        # Detectar si estamos en las características o aún en el nombre del producto
-        if palabra.text in palabras_clave_caracteristicas:
-            clave_actual = palabra.text  # Asignamos la palabra clave como el nombre de la característica
+        if palabra.text.lower() in palabras_clave_caracteristicas:
+            if categoria_actual and len(caracteristica_actual) > 0:
+                valor_caracteristica = " ".join(caracteristica_actual).strip()
+                if categoria_actual in producto_caracteristicas["caracteristicas"]:
+                    if categoria_actual == "componentes":
+                        producto_caracteristicas["caracteristicas"][categoria_actual].append(valor_caracteristica)
+                    else:
+                        producto_caracteristicas["caracteristicas"][categoria_actual] += f", {valor_caracteristica}"
+                else:
+                    if categoria_actual == "componentes":
+                        producto_caracteristicas["caracteristicas"][categoria_actual] = [valor_caracteristica]
+                    else:
+                        producto_caracteristicas["caracteristicas"][categoria_actual] = valor_caracteristica
+                caracteristica_actual = []
+            categoria_actual = determinar_categoria(palabra.text)
+            en_caracteristicas = True
             continue
 
-        # Detectar números o adjetivos que podrían ser parte del valor de una característica
-        if clave_actual and palabra.pos_ in ["NUM", "ADJ", "NOUN", "PROPN"]:
-            caracteristica_actual.append(palabra.text)
+        if palabra.text.lower() in {"bluetooth", "wifi", "ethernet", "usb", "hdmi"}:
+            if categoria_actual and len(caracteristica_actual) > 0:
+                valor_caracteristica = " ".join(caracteristica_actual).strip()
+                if categoria_actual in producto_caracteristicas["caracteristicas"]:
+                    if categoria_actual == "componentes":
+                        producto_caracteristicas["caracteristicas"][categoria_actual].append(valor_caracteristica)
+                    else:
+                        producto_caracteristicas["caracteristicas"][categoria_actual] += f", {valor_caracteristica}"
+                else:
+                    if categoria_actual == "componentes":
+                        producto_caracteristicas["caracteristicas"][categoria_actual] = [valor_caracteristica]
+                    else:
+                        producto_caracteristicas["caracteristicas"][categoria_actual] = valor_caracteristica
+                caracteristica_actual = []
+
+            categoria_actual = determinar_categoria(palabra.text)
+            en_caracteristicas = True
+            continue
+
+        if categoria_actual and palabra.pos_ in ["NUM", "ADJ", "NOUN", "PROPN", "VERB"]:
+            if palabra.pos_ == "NUM":
+                try:
+                    siguiente = next(it)
+                    if siguiente.text.lower() in palabras_clave_caracteristicas:
+                        caracteristica_actual.append(f"{palabra.text} {siguiente.text}")
+                        continue
+                    else:
+                        caracteristica_actual.append(palabra.text)
+                        it = (token for token in [siguiente] + list(it))
+                except StopIteration:
+                    caracteristica_actual.append(palabra.text)
+            else:
+                caracteristica_actual.append(palabra.text)
         else:
-            # Si estamos en el nombre del producto
-            if palabra.pos_ in ["NOUN", "PROPN"] and not clave_actual:
+            if not en_caracteristicas and palabra.pos_ in ["NOUN", "PROPN", "ADJ"]:
                 producto.append(palabra.text)
 
-    # Unir el nombre del producto
-    producto_caracteristicas["nombre"] = " ".join(producto)
+    producto_caracteristicas["nombre"] = " ".join(producto).strip()
 
-    # Agregar la última característica si no fue añadida
-    if clave_actual and len(caracteristica_actual) > 0:
-        producto_caracteristicas["caracteristicas"][clave_actual] = " ".join(caracteristica_actual)
+    if categoria_actual and len(caracteristica_actual) > 0:
+        valor_caracteristica = " ".join(caracteristica_actual).strip()
+        if categoria_actual in producto_caracteristicas["caracteristicas"]:
+            if categoria_actual == "componentes":
+                producto_caracteristicas["caracteristicas"][categoria_actual].append(valor_caracteristica)
+            else:
+                producto_caracteristicas["caracteristicas"][categoria_actual] += f", {valor_caracteristica}"
+        else:
+            if categoria_actual == "componentes":
+                producto_caracteristicas["caracteristicas"][categoria_actual] = [valor_caracteristica]
+            else:
+                producto_caracteristicas["caracteristicas"][categoria_actual] = valor_caracteristica
 
     print(producto_caracteristicas)
     return producto_caracteristicas
 
 
-# # Ejemplo de uso
-# enunciado = "Portatil ASUS TUF gaming F15, 8 GB de RAM, 500 GB de almacenamiento"
-# resultado = ProcessInformation(enunciado)
-# print(resultado)
 
-# enunciado2 = "Lapiz mongol azul y que mida 30 cm"
-# resultado2 = ProcessInformation(enunciado2)
-# print(resultado2)
+# Ejemplo de uso
+if __name__ == "__main__":
+    enunciado1 = "Portátil ASUS TUF gaming F15, 8 GB de RAM, 500 GB de almacenamiento, pantalla de 15.6 pulgadas, color negro, procesador Intel i7, GPU NVIDIA RTX 3060 y tenga un precio menor de 1500 USD"
+    resultado1 = ProcessInformation(enunciado1)
+    print("Resultado 1:", resultado1)
+    
+    enunciado2 = "Lápiz mongol azul y que mida 30 cm, peso de 0.5 kg, material de madera, disponible en tienda online y física, precio de 2.5 USD"
+    resultado2 = ProcessInformation(enunciado2)
+    print("Resultado 2:", resultado2)
+    
+    enunciado3 = "Smartphone Samsung Galaxy S21, 128 GB de almacenamiento, 8 GB de RAM, pantalla de 6.2 pulgadas, color azul, batería de 4000 mAh, disponible en tiendas oficiales, precio de 799 EUR"
+    resultado3 = ProcessInformation(enunciado3)
+    print("Resultado 3:", resultado3)

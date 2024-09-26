@@ -1,37 +1,55 @@
 import pandas as pd
-import numpy as np
 import json
+import chardet
 
+def rankProduct(jsonFile):
+    # Detectar la codificación del archivo
+    with open(jsonFile, 'rb') as file:
+        raw_data = file.read()
+        result = chardet.detect(raw_data)
+        encoding = result['encoding']
 
-def rankProduct(data):
-    # Cargar los datos desde la variable JSON
-    
-    productos_df = pd.json_normalize(data)
+    # Cargar el JSON desde el archivo usando la codificación detectada
+    try:
+        with open(jsonFile, 'r', encoding=encoding) as f:
+            data = json.load(f)
+            print("Datos cargados correctamente:", data)  # Verificar si los datos se cargan correctamente
+    except json.JSONDecodeError as e:
+        print(f"Error al decodificar JSON: {e}")
+        return []
 
-    # Limpiar datos (eliminar filas con valores nulos en precio, ventas o calidad)
-    productos_df = productos_df.dropna(subset=['precio', 'ventas', 'calidad'])
+    # Verificar si hay datos para procesar
+    if not data:
+        print("No se encontraron datos en el archivo JSON")
+        return []
 
-    # Normalizar el precio y las ventas entre 0 y 1
-    productos_df['precio_normalizado'] = (productos_df['precio'] - productos_df['precio'].min()) / (productos_df['precio'].max() - productos_df['precio'].min())
-    productos_df['ventas_normalizadas'] = (productos_df['ventas'] - productos_df['ventas'].min()) / (productos_df['ventas'].max() - productos_df['ventas'].min())
+    # Normalizar el JSON para convertirlo en un DataFrame
+    df = pd.json_normalize(data)
+    print("DataFrame después de normalización:\n", df)  # Imprimir el DataFrame para verificar
 
-    # Calcular el ranking basado en calidad, ventas y precio (donde menor precio es mejor)
-    productos_df['ranking'] = productos_df['calidad'] * 0.5 + productos_df['ventas_normalizadas'] * 0.3 - productos_df['precio_normalizado'] * 0.2
+    # Verificar si las columnas necesarias están presentes
+    required_columns = ['precio', 'valoracion']
+    if not all(col in df.columns for col in required_columns):
+        print(f"Faltan columnas requeridas. Columnas presentes: {df.columns}")
+        return []
 
-    # Ordenar por el ranking de mayor a menor
-    productos_rankeados = productos_df.sort_values(by='ranking', ascending=False)
+    # Limpiar y convertir los valores de precio y valoracion
+    try:
+        df['precio'] = df['precio'].astype(str).str.replace(r'[\$,]', '', regex=True).astype(float)
+        df['valoracion'] = df['valoracion'].astype(str).str.extract(r'(\d+\.\d+)').astype(float)
+        print("DataFrame después de limpiar 'precio' y 'valoracion':\n", df[['precio', 'valoracion']])  # Verificar limpieza
+    except Exception as e:
+        print(f"Error al procesar 'precio' o 'valoracion': {e}")
+        return []
 
-    # Obtener los mejores 100 productos (en este caso, solo hay 3)
-    mejores_100_productos = productos_rankeados.head(100)
+    # Realizar el ranking: ponderamos con mayor peso la valoración y menor el precio
+    df['ranking_score'] = df['valoracion'] / df['precio']
 
-    # Convertir a JSON para devolver en una API o guardarlo en un archivo
-    mejores_100_json_str = mejores_100_productos[['id', 'nombre', 'ranking']].to_json(orient='records')
+    # Ordenar por el ranking
+    df_ranked = df.sort_values(by='ranking_score', ascending=False)
+    print("DataFrame después del ranking:\n", df_ranked[['precio', 'valoracion', 'ranking_score']])  # Verificar el ranking
 
-    # Convertir el string JSON a un diccionario de Python
-    mejores_100_dict = json.loads(mejores_100_json_str)
+    # Convertir el DataFrame a una lista de diccionarios
+    productos_rankeados = df_ranked.to_dict(orient='records')
 
-    return mejores_100_dict
-
-    # Llamada a la función
-    resultado_dict = rankProduct()
-    print(resultado_dict)  # Ahora es un diccionario de Python
+    return productos_rankeados

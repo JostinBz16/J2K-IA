@@ -1,10 +1,10 @@
 from flask import Flask, render_template, url_for, flash, redirect, jsonify
-from flask import Flask, render_template, url_for, flash, redirect
 from templates.formsApp.form import FormSearchProduct
 from models.producto import Producto
 from IAProcess.recognizeProduct import ProcessInformation 
 from IAProcess.rankProcess.rankProduct import rankProduct
 from IAProcess.Web_Scrape.indexscrapping import scrapping
+import json
 
 app = Flask(__name__, static_folder='static')
 app.config['SECRET_KEY'] = 'KKJRE54573FSLKD*DF5FDLOLYSVVFW83472386JXT'
@@ -25,16 +25,18 @@ def search():
     return render_template('search.html', form=form)
 
 @app.route('/products')
-def products():
-    data = [
-        {"id": 1, "nombre": "Producto A", "precio": 20, "calidad": 8, "ventas": 500},
-        {"id": 2, "nombre": "Producto B", "precio": 35, "calidad": 9, "ventas": 1500},
-        {"id": 3, "nombre": "Producto C", "precio": 15, "calidad": 6, "ventas": 200}
-    ]
-    # Aquí podrías listar productos o mostrar detalles de un producto específico
-    products = rankProduct(data)  # Llama a la función que genera el ranking
-    # products = jsonify(resultado_dict)  # Devuelve el resultado como una respuesta JSON
-    return render_template('products.html', productos = products)
+def products(): 
+    productos_scrapeados = './productos_scrapeados.json'
+    try:
+        productos_rankeados = rankProduct(productos_scrapeados)
+        if not productos_rankeados:
+            flash('No se pudieron cargar los productos. Por favor, intente más tarde.', 'error')
+            return redirect(url_for('index'))
+        return render_template('products.html', productos=productos_rankeados)
+    except Exception as e:
+        print(f"Error al procesar productos: {e}")
+        flash('Ocurrió un error al procesar los productos. Por favor, intente más tarde.', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/products/details/<int:id>')
 def itemDetails(id):

@@ -10,7 +10,7 @@ caracteristicas_biblioteca = {
     "peso": {"kg", "gramos", "peso", "libras"},
     "ram": {"ram", "memoria", "gb"},
     "almacenamiento": {"gb", "tb", "almacenamiento", "ssd", "hdd", "mb"},
-    "pantalla": {"pantalla", "hd", "full hd", "4k", "oled", "lcd", "ips", "oled"},
+    "pantalla": {"pantalla", "hd", "full hd", "4k", "oled", "lcd", "ips"},
     "garantía": {"garantía", "soporte", "servicio", "devolución", "devolucion", "años"},
     "procesador": {"procesador", "cpu", "núcleo", "ghz"},
     "componentes": {"gpu", "tarjeta gráfica", "placa base", "fuente", "ventilador"},

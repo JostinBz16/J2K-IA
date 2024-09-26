@@ -36,10 +36,6 @@ def mercado_libre(nombre_producto):
             products_array.append(data)
             #print(data)
 
-    # Convertir a DataFrame y mostrar
-    df = pd.DataFrame(products_array)
-    print(df)
-
     archivo_json = 'productos.json'
-    with open(archivo_json, 'w') as file:
+    with open(archivo_json, 'w', encoding='utf-8') as file:
         json.dump(products_array, file, indent=4, ensure_ascii=False)

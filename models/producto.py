@@ -1,61 +1,25 @@
-class Producto:
-    def __init__(self, nombre, descripcion, precio, image_url, url_producto):
-        # Atributos privados
-        self.__nombre = nombre
-        self.__descripcion = descripcion
-        self.__precio = precio
-        self.__image_url = image_url
-        self.__url_producto = url_producto
+from app import db
 
-    # Getter para 'nombre' usando property
-    @property
-    def nombre(self):
-        return self.__nombre
+class Producto(db.Model):
+    __tablename__ = 'productos'
 
-    # Setter para 'nombre'
-    @nombre.setter
-    def nombre(self, value):
-        self.__nombre = value
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    descripcion = db.Column(db.String(255), nullable=True)
+    precio = db.Column(db.Float, nullable=False)
+    image_url = db.Column(db.String(255), nullable=True)
+    url_producto = db.Column(db.String(255), nullable=True)
+    valoracion = db.Column(db.Float, nullable=True)
 
-    # Getter para 'descripcion' usando property
-    @property
-    def descripcion(self):
-        return self.__descripcion
+    # Relación uno a muchos con Opiniones
+    opiniones = db.relationship('Opinion', backref='producto', lazy=True)
 
-    # Setter para 'descripcion'
-    @descripcion.setter
-    def descripcion(self, value):
-        self.__descripcion = value
+    def __init__(self, nombre, precio, image_url, url_producto, valoracion):
+        self.nombre = nombre
+        self.precio = precio
+        self.image_url = image_url
+        self.url_producto = url_producto
+        self.valoracion = valoracion
 
-    # Getter para 'precio' usando property
-    @property
-    def precio(self):
-        return self.__precio
-
-    # Setter para 'precio', con validación
-    @precio.setter
-    def precio(self, value):
-        if value > 0:
-            self.__precio = value
-        else:
-            raise ValueError("El precio debe ser mayor que 0.")
-
-    # Getter para 'image_url' usando property
-    @property
-    def image_url(self):
-        return self.__image_url
-
-    # Setter para 'image_url'
-    @image_url.setter
-    def image_url(self, value):
-        self.__image_url = value
-        
-    # Getter para 'url_producto' usando property
-    @property
-    def url_producto(self):
-        return self.__url_producto
-
-    # Setter para 'url_producto'
-    @url_producto.setter
-    def url_producto(self, value):
-        self.__url_producto = value
+    def __repr__(self):
+        return f"<Producto {self.nombre} - ${self.precio}>"

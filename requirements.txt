@@ -6,3 +6,5 @@ Beautifulsoup4
 Pandas
 Numpy
 Requests
+Flask-SQLAlchemy
+psycopg2-binary

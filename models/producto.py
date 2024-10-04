@@ -4,11 +4,11 @@ class Producto(db.Model):
     __tablename__ = 'productos'
 
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    descripcion = db.Column(db.String(255), nullable=True)
+    nombre = db.Column(db.String(250), nullable=False)
+    descripcion = db.Column(db.Text)
     precio = db.Column(db.Float, nullable=False)
-    image_url = db.Column(db.String(255), nullable=True)
-    url_producto = db.Column(db.String(255), nullable=True)
+    image_url = db.Column(db.Text, nullable=True)
+    url_producto = db.Column(db.Text, nullable=True)
     valoracion = db.Column(db.Float, nullable=True)
 
     # Relación uno a muchos con Opiniones

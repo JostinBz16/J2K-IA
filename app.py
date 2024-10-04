@@ -30,93 +30,78 @@ class NoProductsFoundException(Exception):
     pass
 
 
+def convert_price_to_float(price_string):
+    """
+    Convierte un string de precio en formato "$3.399.150" o "3.999.000" en un float.
+    """
+    if price_string:
+        # Eliminamos el símbolo de moneda y los separadores de miles
+        price_string = price_string.replace("$", "").replace(".", "").replace(",", ".")
+        try:
+            return float(price_string)
+        except ValueError:
+            return 0.0
+    return 0.0
+
+
 @app.route("/search", methods=["GET", "POST"])
 def search():
     form = FormSearchProduct()
+    error_message = None  # Inicializamos el mensaje de error como None
 
     if form.validate_on_submit():
         product_name = form.productName.data
-        print(
-            "nombre del producto:", product_name
-        )  # Asegúrate de que se imprime el nombre correcto
+        print(f"nombre del producto: {product_name}")
 
         try:
             # Llama a la función de scraping y espera los resultados
-            result = scrapping(product_name)  # Cambia `data` por `product_name`
+            result = scrapping(product_name)
 
             # Verifica si la lista de productos no está vacía
             if not result or len(result) == 0:
                 raise NoProductsFoundException("No se encontraron productos")
 
             for product in result:
-                if product:
-                    # Verifica si el producto ya existe en la base de datos por nombre o URL
-                    existing_product = Producto.query.filter(
-                        (Producto.nombre == product["nombre_articulo"])
-                        | (Producto.url_producto == product["link"])
-                    ).first()
+                existing_product = Producto.query.filter(
+                    Producto.url_producto == product["link"]
+                ).first()
 
-                    if existing_product:
-                        print(
-                            f"El producto '{existing_product.nombre}' ya existe en la base de datos.",
-                            "info",
-                        )
-                        continue  # No guarda el producto si ya existe, sigue con el siguiente
+                if existing_product:
+                    continue
 
-                    # Si no existe, lo guarda en la base de datos
-                    precio = (
-                        float(product["precio_antes"].replace("$", "").replace(",", ""))
-                        if product.get("precio_antes")
-                        else 0.0
+                # Convertir los precios y crear un nuevo producto
+                precio_actual = convert_price_to_float(product.get("precio"))
+                valoracion = (
+                    float(product["calificacion"])
+                    if "calificacion" in product
+                    else None
+                )
+
+                new_product = Producto(
+                    nombre=product["nombre_articulo"],
+                    precio=precio_actual,
+                    image_url=product.get("imagen"),
+                    url_producto=product["link"],
+                    valoracion=valoracion,
+                )
+                db.session.add(new_product)
+                db.session.commit()
+
+                for comentario in product.get("comentarios", []):
+                    new_opinion = Opinion(
+                        contenido=comentario, producto_id=new_product.id
                     )
-                    valoracion = (
-                        float(product["calificacion"])
-                        if "calificacion" in product
-                        else None
-                    )
+                    db.session.add(new_opinion)
 
-                    new_product = Producto(
-                        nombre=product["nombre_articulo"],
-                        precio=precio,
-                        image_url=product.get("imagen"),
-                        url_producto=product["link"],
-                        valoracion=valoracion,
-                    )
-                    db.session.add(new_product)
-                    db.session.commit()  # Guarda el producto primero
-
-                    # Guardar los comentarios asociados (si existen)
-                    for comentario in product.get("comentarios", []):
-                        new_opinion = Opinion(
-                            contenido=comentario, producto_id=new_product.id
-                        )
-                        db.session.add(new_opinion)
-
-                    db.session.commit()  # Guarda todas las opiniones
+                db.session.commit()
 
         except NoProductsFoundException as e:
-            print(str(e))
-            flash("No se encontraron productos con ese nombre.", "danger")
-            return render_template("search.html", form=form)
+            error_message = str(e)  # Capturamos el error y lo pasamos al template
 
         except Exception as e:
-            print(f"Error durante el procesamiento: {str(e)}")
-            flash("Ocurrió un error inesperado.", "danger")
-            return render_template("search.html", form=form)
+            error_message = f"Ocurrió un error inesperado: {str(e)}"
 
-    return render_template("search.html", form=form)
-
-    # if form.validate_on_submit():
-    #     try:
-    #         flash(f'Form submitted successfully! Name: {form.productName.data}', 'success')
-    #         # product = ProcessInformation(form.productName.data)
-    #         # nombre_producto = product['nombre']
-
-    #         # scrapping(nombre_producto)
-    #         return redirect(url_for('products'))  # Redirige a una página de resultados
-    #     except Exception as e:
-    #         flash(f'Ocurrió un error: {str(e)}', 'danger')
-    # return render_template('search.html', form=form)
+    return render_template("search.html", form=form, error_message=error_message)
 
 
 @app.route("/products")

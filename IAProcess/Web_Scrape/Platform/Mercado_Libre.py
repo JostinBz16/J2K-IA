@@ -117,6 +117,8 @@ def mercado_libre(nombre_producto):
                 data["comentarios"] = None
 
             products_array.append(data)
+            print(products_array)
+            return products_array
             # print(data)
 
     # Convertir a DataFrame y mostrar

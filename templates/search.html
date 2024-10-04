@@ -36,4 +36,15 @@
     </form>
   </div>
 </main>
-{% endblock %}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+{% if error_message %}
+<script>
+  Swal.fire({
+    icon: "error",
+    title: "Error",
+    text: "{{ error_message }}",
+  });
+</script>
+{% endif %} {% endblock %}

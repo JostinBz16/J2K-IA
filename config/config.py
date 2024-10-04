@@ -1,7 +1,7 @@
 
 class Config:
     # Usa DATABASE_URL como variable de entorno, con un valor por defecto para desarrollo
-    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:jxt2004@localhost/j2k_db'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:1234@localhost/j2k_db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # class Config:

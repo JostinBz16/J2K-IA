@@ -70,7 +70,7 @@ def mercado_libre(nombre_producto):
 
                     # Extraer todos los comentarios
                     comentarios = []
-                    comentario_tags = product_soup.find_all('p', {'class': 'ui-review-capability__summary__plain_text__summary_container'})
+                    comentario_tags = product_soup.find_all('p', {'class': 'ui-review-capability-comments__comment__content'})
                     
                     if comentario_tags:
                         for comentario in comentario_tags:

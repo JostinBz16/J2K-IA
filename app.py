@@ -24,12 +24,16 @@ def index():
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     form = FormSearchProduct()
+    print('nombre del producto:')
+    data = input()
+    scrapping(data)
     if form.validate_on_submit():
         try:
             flash(f'Form submitted successfully! Name: {form.productName.data}', 'success')
-            product = ProcessInformation(form.productName.data)
-            nombre_producto = product['nombre']
-            scrapping(nombre_producto)
+            # product = ProcessInformation(form.productName.data)
+            # nombre_producto = product['nombre']
+            
+            # scrapping(nombre_producto)
             return redirect(url_for('products'))  # Redirige a una página de resultados
         except Exception as e:
             flash(f'Ocurrió un error: {str(e)}', 'danger')

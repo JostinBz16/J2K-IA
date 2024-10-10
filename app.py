@@ -7,8 +7,9 @@ from config.config import Config
 from flask import flash
 from utils.db import db  # Importa desde extensiones
 from templates.formsApp.form import FormSearchProduct
-from models.producto import Producto
-from models.opinion import Opinion  # Asegúrate de importar Opinion si lo usas
+from services.Producto import ProductoService
+from services.Vendedor import VendedorService
+from services.Opinion import OpinionService
 
 app = Flask(__name__, static_folder="static")
 app.config["SECRET_KEY"] = "KKJRE54573FSLKD*DF5FDLOLYSVVFW83472386JXT"
@@ -36,72 +37,70 @@ def search():
 
     if form.validate_on_submit():
         product_name = form.productName.data
-        print(
-            "nombre del producto:", product_name
-        )  # Asegúrate de que se imprime el nombre correcto
+        print("nombre del producto:", product_name)
 
         try:
-            # Llama a la función de scraping y espera los resultados
-            result = scrapping(product_name)  # Cambia `data` por `product_name`
+            # Llamar a la función de scraping para obtener los productos
+            result = scrapping(product_name)
 
-            # Verifica si la lista de productos no está vacía
+            # Si no se obtienen resultados, lanzar una excepción personalizada
             if not result or len(result) == 0:
                 raise NoProductsFoundException("No se encontraron productos")
 
             for product in result:
-                if product:
-                    # Verifica si el producto ya existe en la base de datos por nombre o URL
-                    existing_product = Producto.query.filter(
-                        (Producto.nombre == product["nombre_articulo"])
-                        | (Producto.url_producto == product["link"])
-                    ).first()
-
-                    if existing_product:
-                        print(
-                            f"El producto '{existing_product.nombre}' ya existe en la base de datos.",
-                            "info",
-                        )
-                        continue  # No guarda el producto si ya existe, sigue con el siguiente
-
-                    # Si no existe, lo guarda en la base de datos
-                    precio = (
-                        float(product["precio_antes"].replace("$", "").replace(",", ""))
-                        if product.get("precio_antes")
-                        else 0.0
+                try:
+                    # Extraer y validar información del producto
+                    nombre_producto = product["nombre_articulo"]
+                    url_producto = product["link"]
+                    precio = float(
+                        product.get("precio_antes", "0")
+                        .replace("$", "")
+                        .replace(",", "")
                     )
-                    valoracion = (
-                        float(product["calificacion"])
-                        if "calificacion" in product
-                        else None
-                    )
+                    valoracion = float(product.get("calificacion", "0"))
 
-                    new_product = Producto(
-                        nombre=product["nombre_articulo"],
+                    # Intentar agregar el producto si no existe ya con el mismo nombre y URL
+                    nuevo_producto = ProductoService.agregar_producto(
+                        nombre=nombre_producto,
                         precio=precio,
                         image_url=product.get("imagen"),
-                        url_producto=product["link"],
+                        url_producto=url_producto,
                         valoracion=valoracion,
                     )
-                    db.session.add(new_product)
-                    db.session.commit()  # Guarda el producto primero
 
-                    # Guardar los comentarios asociados (si existen)
-                    for comentario in product.get("comentarios", []):
-                        new_opinion = Opinion(
-                            contenido=comentario, producto_id=new_product.id
+                    # Guardar opiniones asociadas al producto
+                    opiniones = product.get("comentarios", [])
+                    for comentario in opiniones:
+                        # Busca el producto por nombre para obtener el ID
+                        producto_bd = ProductoService.buscar_producto_por_nombre(
+                            nombre_producto
                         )
-                        db.session.add(new_opinion)
 
-                    db.session.commit()  # Guarda todas las opiniones
+                        if producto_bd:
+                            OpinionService.agregar_opinion(
+                                contenido=comentario,
+                                producto_id=producto_bd.id,  # Usa el ID del producto encontrado
+                            )
+
+                except ValueError as e:
+                    # Si ocurre un error en el producto, continuar con el siguiente
+                    error_msg = (
+                        f"Error en el producto '{product['nombre_articulo']}': {str(e)}"
+                    )
+                    print(error_msg)
+                    flash(error_msg, "danger")
+                    continue
 
         except NoProductsFoundException as e:
-            print(str(e))
-            flash("No se encontraron productos con ese nombre.", "danger")
+            error_msg = str(e)
+            print(error_msg)
+            flash(error_msg, "danger")
             return render_template("search.html", form=form)
 
         except Exception as e:
-            print(f"Error durante el procesamiento: {str(e)}")
-            flash("Ocurrió un error inesperado.", "danger")
+            error_msg = f"Error durante el procesamiento: {e}"
+            print(error_msg)
+            flash(error_msg, "danger")
             return render_template("search.html", form=form)
 
     return render_template("search.html", form=form)
@@ -122,9 +121,9 @@ def search():
 @app.route("/products")
 def products():
     try:
-        products = (
-            Producto.query.all()
-        )  # Obtiene todos los productos de la base de datos
+        # products = (
+        #     Producto.query.all()
+        # )  # Obtiene todos los productos de la base de datos
         ranked_products = rankProduct(
             [product.to_dict() for product in products]
         )  # Asegúrate de tener un método to_dict en tu modelo

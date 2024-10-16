@@ -1,11 +1,12 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
 
 
 # Función para hacer scraping de los listados de productos en Mercado Libre
+
+
 def mercado_libre(nombre_producto):
     articulo = nombre_producto
     r = requests.get(
@@ -74,7 +75,7 @@ def mercado_libre(nombre_producto):
             else:
                 data["calificacion"] = None  # Si no se encuentra el elemento
 
-            # Navegar al enlace del producto para extraer la imagen
+            # Navegar al enlace del producto para extraer la imagen, comentarios, vendedor y cantidad vendida
             product_url = data["link"]
             try:
                 response = requests.get(product_url)
@@ -98,9 +99,10 @@ def mercado_libre(nombre_producto):
                     comentarios = []
                     comentario_tags = product_soup.find_all(
                         "p",
-                        {"class": "ui-review-capability-comments__comment__content"},
+                        {
+                            "class": "ui-review-capability__summary__plain_text__summary_container"
+                        },
                     )
-
                     if comentario_tags:
                         for comentario in comentario_tags:
                             comentarios.append(comentario.text.strip())
@@ -108,21 +110,64 @@ def mercado_libre(nombre_producto):
                     # Almacenar comentarios si existen, de lo contrario asignar None
                     data["comentarios"] = comentarios if comentarios else None
 
+                    # Extraer el nombre del vendedor
+                    vendedor_tag = product_soup.find(
+                        "div", {"class": "ui-pdp-seller__header__title"}
+                    )
+                    if vendedor_tag:
+                        data["vendedor"] = (
+                            vendedor_tag.text.strip()
+                        )  # Extraer el nombre del vendedor
+                    else:
+                        data["vendedor"] = (
+                            None  # Si no se encuentra el vendedor, asigna None
+                        )
+
+                    # Extraer la cantidad de productos vendidos
+                    vendidos_tag = product_soup.find(
+                        "span",
+                        {
+                            "class": "ui-pdp-color--BLACK ui-pdp-size--XSMALL ui-pdp-family--BOLD"
+                        },
+                    )
+                    if vendidos_tag:
+                        vendidos_texto = vendidos_tag.text.strip()
+                        # Buscar un número en el texto de cantidad vendida (ej. "500 vendidos")
+                        match = re.search(r"(\d+)", vendidos_texto)
+                        if match:
+                            data["vendidos"] = int(
+                                match.group(1)
+                            )  # Extraer el número de productos vendidos
+                        else:
+                            data["vendidos"] = (
+                                None  # Si no se encuentra un número, asignar None
+                            )
+                    else:
+                        data["vendidos"] = (
+                            None  # Si no se encuentra la cantidad de vendidos, asignar None
+                        )
+                        data["confiable"] = None
+
                 else:
                     data["imagen"] = None
                     data["comentarios"] = None
+                    data["vendedor"] = None
+                    data["vendidos"] = None
+                    data["confiable"] = None
+
             except Exception as e:
-                print(f"Error al hacer la solicitud de la imagen y comentarios: {e}")
+                print(
+                    f"Error al hacer la solicitud de la imagen, comentarios, vendedor y cantidad vendida: {e}"
+                )
                 data["imagen"] = None
                 data["comentarios"] = None
+                data["vendedor"] = None
+                data["vendidos"] = None
+                data["confiable"] = None
 
             products_array.append(data)
-            # print(data)
 
-    # Convertir a DataFrame y mostrar
+    # Mueve el retorno aquí para que devuelva todos los productos
     df = pd.DataFrame(products_array)
-    print(df)
-
-    archivo_json = "productos.json"
-    with open(archivo_json, "w", encoding="utf-8") as file:
-        json.dump(products_array, file, indent=4, ensure_ascii=False)
+    # print(df)
+    return products_array if products_array else []

@@ -6,6 +6,7 @@ from IAProcess.Web_Scrape.indexscrapping import scrapping
 from config.config import Config
 from flask import flash
 from utils.db import db  # Importa desde extensiones
+from utils.convert import Convert  # Importa desde extensiones
 from templates.formsApp.form import FormSearchProduct
 from services.Producto import ProductoService
 from services.Vendedor import VendedorService
@@ -34,88 +35,89 @@ class NoProductsFoundException(Exception):
 @app.route("/search", methods=["GET", "POST"])
 def search():
     form = FormSearchProduct()
+    error_message = None  # Inicializamos el mensaje de error como None
 
     if form.validate_on_submit():
         product_name = form.productName.data
-        print("nombre del producto:", product_name)
 
         try:
-            # Llamar a la función de scraping para obtener los productos
+            # Llama a la función de scraping y espera los resultados
             result = scrapping(product_name)
 
-            # Si no se obtienen resultados, lanzar una excepción personalizada
+            # Verifica si la lista de productos no está vacía
             if not result or len(result) == 0:
                 raise NoProductsFoundException("No se encontraron productos")
 
             for product in result:
-                try:
-                    # Extraer y validar información del producto
-                    nombre_producto = product["nombre_articulo"]
-                    url_producto = product["link"]
-                    precio = float(
-                        product.get("precio_antes", "0")
-                        .replace("$", "")
-                        .replace(",", "")
-                    )
-                    valoracion = float(product.get("calificacion", "0"))
+                # Verificar si el vendedor ya existe en la base de datos
+                vendedor = VendedorService.existe_vendedor(product["vendedor"])
+                valoracion = (
+                    float(product["calificacion"])
+                    if product["calificacion"] not in [None, "", "null"]
+                    else 0.0
+                )
+                if vendedor is None:
+                    # Validar el valor de "confiable" y asignar False si no está presente o es inválido
+                    es_confiable = product.get("confiable", False)
 
-                    # Intentar agregar el producto si no existe ya con el mismo nombre y URL
-                    nuevo_producto = ProductoService.agregar_producto(
-                        nombre=nombre_producto,
-                        precio=precio,
-                        image_url=product.get("imagen"),
-                        url_producto=url_producto,
+                    nombre_vendedor = product["vendedor"]
+
+                    # Agregar el vendedor
+                    VendedorService.agregar_vendedor(nombre_vendedor, es_confiable)
+
+                new_vendedor = VendedorService.existe_vendedor(product["vendedor"])
+                # Verificar si el producto ya existe usando el id correcto
+                existing_product = ProductoService.existe_producto(
+                    product["nombre_articulo"],
+                    new_vendedor.id,  # Usar el id del vendedor actual
+                )
+
+                if existing_product is not None:
+                    continue  # Si el producto ya existe, continuar con el siguiente
+                else:
+                    # Convertir los precios y crear un nuevo producto
+                    precio_actual = Convert.convert_price_to_float(
+                        product.get("precio")
+                    )
+
+                    # Usar el servicio para agregar el nuevo producto
+                    ProductoService.agregar_producto(
+                        nombre=product["nombre_articulo"],
+                        precio=precio_actual,
+                        image_url=product["imagen"],
+                        url_producto=product["link"],
                         valoracion=valoracion,
+                        vendedor_id=new_vendedor.id,  # Asegurarse de usar el id del vendedor correcto
                     )
 
-                    # Guardar opiniones asociadas al producto
-                    opiniones = product.get("comentarios", [])
-                    for comentario in opiniones:
-                        # Busca el producto por nombre para obtener el ID
-                        producto_bd = ProductoService.buscar_producto_por_nombre(
-                            nombre_producto
+                product_exists = ProductoService.existe_producto(
+                    product["nombre_articulo"],
+                    new_vendedor.id,  # Usar el id del vendedor actual
+                )
+                print(product_exists)
+
+                # Ahora puedes agregar las opiniones utilizando el ID del nuevo producto
+                # Validar si hay comentarios antes de iterar
+                comentarios = product.get("comentarios", [])
+                if comentarios and isinstance(comentarios, list):
+                    # Agregar opiniones si existen comentarios válidos
+                    for comentario in comentarios:
+                        OpinionService.agregar_opinion(
+                            contenido=comentario,
+                            producto_id=product_exists.id,  # Usa el ID del producto agregado
                         )
 
-                        if producto_bd:
-                            OpinionService.agregar_opinion(
-                                contenido=comentario,
-                                producto_id=producto_bd.id,  # Usa el ID del producto encontrado
-                            )
-
-                except ValueError as e:
-                    # Si ocurre un error en el producto, continuar con el siguiente
-                    error_msg = (
-                        f"Error en el producto '{product['nombre_articulo']}': {str(e)}"
-                    )
-                    print(error_msg)
-                    flash(error_msg, "danger")
-                    continue
+                # Commit de todas las adiciones al final
+                db.session.commit()
 
         except NoProductsFoundException as e:
-            error_msg = str(e)
-            print(error_msg)
-            flash(error_msg, "danger")
-            return render_template("search.html", form=form)
+            error_message = str(e)  # Capturamos el error y lo pasamos al template
 
         except Exception as e:
-            error_msg = f"Error durante el procesamiento: {e}"
-            print(error_msg)
-            flash(error_msg, "danger")
-            return render_template("search.html", form=form)
+            db.session.rollback()  # Revertir cualquier cambio en caso de error
+            error_message = f"Ocurrió un error inesperado: {str(e)}"
 
-    return render_template("search.html", form=form)
-
-    # if form.validate_on_submit():
-    #     try:
-    #         flash(f'Form submitted successfully! Name: {form.productName.data}', 'success')
-    #         # product = ProcessInformation(form.productName.data)
-    #         # nombre_producto = product['nombre']
-
-    #         # scrapping(nombre_producto)
-    #         return redirect(url_for('products'))  # Redirige a una página de resultados
-    #     except Exception as e:
-    #         flash(f'Ocurrió un error: {str(e)}', 'danger')
-    # return render_template('search.html', form=form)
+    return render_template("search.html", form=form, error_message=error_message)
 
 
 @app.route("/products")

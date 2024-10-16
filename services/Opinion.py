@@ -12,7 +12,6 @@ class OpinionService:
 
         nueva_opinion = Opinion(contenido=contenido, producto_id=producto_id)
         db.session.add(nueva_opinion)
-        db.session.commit()
         return nueva_opinion
 
     @staticmethod
@@ -24,7 +23,6 @@ class OpinionService:
         opinion = OpinionService.buscar_opinion_por_id(opinion_id)
         if opinion:
             opinion.contenido = contenido
-            db.session.commit()
         return opinion
 
     @staticmethod
@@ -32,7 +30,6 @@ class OpinionService:
         opinion = OpinionService.buscar_opinion_por_id(opinion_id)
         if opinion:
             db.session.delete(opinion)
-            db.session.commit()
 
     @staticmethod
     def existe_opinion(opinion_id):

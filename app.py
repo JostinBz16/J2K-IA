@@ -6,9 +6,11 @@ from IAProcess.Web_Scrape.indexscrapping import scrapping
 from config.config import Config
 from flask import flash
 from utils.db import db  # Importa desde extensiones
+from utils.convert import Convert  # Importa desde extensiones
 from templates.formsApp.form import FormSearchProduct
-from models.producto import Producto
-from models.opinion import Opinion  # Asegúrate de importar Opinion si lo usas
+from services.Producto import ProductoService
+from services.Vendedor import VendedorService
+from services.Opinion import OpinionService
 
 app = Flask(__name__, static_folder="static")
 app.config["SECRET_KEY"] = "KKJRE54573FSLKD*DF5FDLOLYSVVFW83472386JXT"
@@ -30,20 +32,6 @@ class NoProductsFoundException(Exception):
     pass
 
 
-def convert_price_to_float(price_string):
-    """
-    Convierte un string de precio en formato "$3.399.150" o "3.999.000" en un float.
-    """
-    if price_string:
-        # Eliminamos el símbolo de moneda y los separadores de miles
-        price_string = price_string.replace("$", "").replace(".", "").replace(",", ".")
-        try:
-            return float(price_string)
-        except ValueError:
-            return 0.0
-    return 0.0
-
-
 @app.route("/search", methods=["GET", "POST"])
 def search():
     form = FormSearchProduct()
@@ -51,7 +39,6 @@ def search():
 
     if form.validate_on_submit():
         product_name = form.productName.data
-        print(f"nombre del producto: {product_name}")
 
         try:
             # Llama a la función de scraping y espera los resultados
@@ -62,43 +49,72 @@ def search():
                 raise NoProductsFoundException("No se encontraron productos")
 
             for product in result:
-                existing_product = Producto.query.filter(
-                    Producto.url_producto == product["link"]
-                ).first()
-
-                if existing_product:
-                    continue
-
-                # Convertir los precios y crear un nuevo producto
-                precio_actual = convert_price_to_float(product.get("precio"))
+                # Verificar si el vendedor ya existe en la base de datos
+                vendedor = VendedorService.existe_vendedor(product["vendedor"])
                 valoracion = (
                     float(product["calificacion"])
-                    if "calificacion" in product
-                    else None
+                    if product["calificacion"] not in [None, "", "null"]
+                    else 0.0
+                )
+                if vendedor is None:
+                    # Validar el valor de "confiable" y asignar False si no está presente o es inválido
+                    es_confiable = product.get("confiable", False)
+
+                    nombre_vendedor = product["vendedor"]
+
+                    # Agregar el vendedor
+                    VendedorService.agregar_vendedor(nombre_vendedor, es_confiable)
+
+                new_vendedor = VendedorService.existe_vendedor(product["vendedor"])
+                # Verificar si el producto ya existe usando el id correcto
+                existing_product = ProductoService.existe_producto(
+                    product["nombre_articulo"],
+                    new_vendedor.id,  # Usar el id del vendedor actual
                 )
 
-                new_product = Producto(
-                    nombre=product["nombre_articulo"],
-                    precio=precio_actual,
-                    image_url=product.get("imagen"),
-                    url_producto=product["link"],
-                    valoracion=valoracion,
-                )
-                db.session.add(new_product)
-                db.session.commit()
-
-                for comentario in product.get("comentarios", []):
-                    new_opinion = Opinion(
-                        contenido=comentario, producto_id=new_product.id
+                if existing_product is not None:
+                    continue  # Si el producto ya existe, continuar con el siguiente
+                else:
+                    # Convertir los precios y crear un nuevo producto
+                    precio_actual = Convert.convert_price_to_float(
+                        product.get("precio")
                     )
-                    db.session.add(new_opinion)
 
+                    # Usar el servicio para agregar el nuevo producto
+                    ProductoService.agregar_producto(
+                        nombre=product["nombre_articulo"],
+                        precio=precio_actual,
+                        image_url=product["imagen"],
+                        url_producto=product["link"],
+                        valoracion=valoracion,
+                        vendedor_id=new_vendedor.id,  # Asegurarse de usar el id del vendedor correcto
+                    )
+
+                product_exists = ProductoService.existe_producto(
+                    product["nombre_articulo"],
+                    new_vendedor.id,  # Usar el id del vendedor actual
+                )
+                print(product_exists)
+
+                # Ahora puedes agregar las opiniones utilizando el ID del nuevo producto
+                # Validar si hay comentarios antes de iterar
+                comentarios = product.get("comentarios", [])
+                if comentarios and isinstance(comentarios, list):
+                    # Agregar opiniones si existen comentarios válidos
+                    for comentario in comentarios:
+                        OpinionService.agregar_opinion(
+                            contenido=comentario,
+                            producto_id=product_exists.id,  # Usa el ID del producto agregado
+                        )
+
+                # Commit de todas las adiciones al final
                 db.session.commit()
 
         except NoProductsFoundException as e:
             error_message = str(e)  # Capturamos el error y lo pasamos al template
 
         except Exception as e:
+            db.session.rollback()  # Revertir cualquier cambio en caso de error
             error_message = f"Ocurrió un error inesperado: {str(e)}"
 
     return render_template("search.html", form=form, error_message=error_message)
@@ -107,9 +123,9 @@ def search():
 @app.route("/products")
 def products():
     try:
-        products = (
-            Producto.query.all()
-        )  # Obtiene todos los productos de la base de datos
+        # products = (
+        #     Producto.query.all()
+        # )  # Obtiene todos los productos de la base de datos
         ranked_products = rankProduct(
             [product.to_dict() for product in products]
         )  # Asegúrate de tener un método to_dict en tu modelo

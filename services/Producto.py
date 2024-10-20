@@ -85,7 +85,12 @@ class ProductoService:
             db.session.delete(producto)
 
     @staticmethod
+    def buscar_producto(nombre):
+        return Producto.query.filter(nombre=nombre).first()
+
+    @staticmethod
     def existe_producto(nombre, vendedor):
+
         return Producto.query.filter(
             (Producto.nombre == nombre) and (Producto.vendedor_id == vendedor.id)
         ).first()

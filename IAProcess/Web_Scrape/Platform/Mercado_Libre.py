@@ -74,8 +74,9 @@ def mercado_libre(nombre_producto):
                 data["calificacion"] = rating_tag.text.strip()
             else:
                 data["calificacion"] = None  # Si no se encuentra el elemento
+                
 
-            # Navegar al enlace del producto para extraer la imagen, comentarios, vendedor y cantidad vendida
+            # Navegar al enlace del producto para extraer la imagen, comentarios, vendedor, cantidad vendida y descripción
             product_url = data["link"]
             try:
                 response = requests.get(product_url)
@@ -87,27 +88,19 @@ def mercado_libre(nombre_producto):
                         "img", {"class": "ui-pdp-image ui-pdp-gallery__figure__image"}
                     )
                     if imagen_tag and "src" in imagen_tag.attrs:
-                        data["imagen"] = imagen_tag[
-                            "src"
-                        ]  # Extraer la URL de la imagen
+                        data["imagen"] = imagen_tag["src"]  # Extraer la URL de la imagen
                     else:
-                        data["imagen"] = (
-                            None  # Si no se encuentra la imagen, asigna None
-                        )
+                        data["imagen"] = None  # Si no se encuentra la imagen, asigna None
 
                     # Extraer todos los comentarios
                     comentarios = []
                     comentario_tags = product_soup.find_all(
                         "p",
-                        {
-                            "class": "ui-review-capability__summary__plain_text__summary_container"
-                        },
+                        {"class": "ui-review-capability__summary__plain_text__summary_container"},
                     )
                     if comentario_tags:
                         for comentario in comentario_tags:
                             comentarios.append(comentario.text.strip())
-
-                    # Almacenar comentarios si existen, de lo contrario asignar None
                     data["comentarios"] = comentarios if comentarios else None
 
                     # Extraer el nombre del vendedor
@@ -115,13 +108,9 @@ def mercado_libre(nombre_producto):
                         "div", {"class": "ui-pdp-seller__header__title"}
                     )
                     if vendedor_tag:
-                        data["vendedor"] = (
-                            vendedor_tag.text.strip()
-                        )  # Extraer el nombre del vendedor
+                        data["vendedor"] = vendedor_tag.text.strip().replace("Vendido por", "").strip()  # Extraer el nombre del vendedor
                     else:
-                        data["vendedor"] = (
-                            None  # Si no se encuentra el vendedor, asigna None
-                        )
+                        data["vendedor"] = None  # Si no se encuentra el vendedor, asigna None
 
                     # Extraer la cantidad de productos vendidos
                     vendidos_tag = product_soup.find(
@@ -135,25 +124,44 @@ def mercado_libre(nombre_producto):
                         # Buscar un número en el texto de cantidad vendida (ej. "500 vendidos")
                         match = re.search(r"(\d+)", vendidos_texto)
                         if match:
-                            data["vendidos"] = int(
-                                match.group(1)
-                            )  # Extraer el número de productos vendidos
+                            data["vendidos"] = int(match.group(1))  # Extraer el número de productos vendidos
                         else:
-                            data["vendidos"] = (
-                                None  # Si no se encuentra un número, asignar None
-                            )
+                            data["vendidos"] = None  # Si no se encuentra un número, asignar None
                     else:
-                        data["vendidos"] = (
-                            None  # Si no se encuentra la cantidad de vendidos, asignar None
-                        )
-                        data["confiable"] = None
+                        data["vendidos"] = None  # Si no se encuentra la cantidad de vendidos, asignar None
+
+                    # Extraer la descripción del producto
+                    descripcion_tag = product_soup.find(
+                        "p", {"class": "ui-pdp-description__content"}
+                    )
+                    if descripcion_tag:
+                        data["descripcion"] = descripcion_tag.text.strip()  # Extraer la descripción
+                    else:
+                        data["descripcion"] = None  # Si no se encuentra la descripción, asignar None
+                        
+                    # Extraer si el vendedor es confiable (etiqueta platino)
+                    confiable_tag = product_soup.find("div", {"class": "ui-seller-data-status__lider-seller"})
+                    if confiable_tag:
+                        data["confiable"] = True  # El vendedor tiene la etiqueta "platino"
+                    else:
+                        data["confiable"] = False  # El vendedor no tiene la etiqueta "platino"
 
                 else:
                     data["imagen"] = None
                     data["comentarios"] = None
                     data["vendedor"] = None
                     data["vendidos"] = None
+                    data["descripcion"] = None
                     data["confiable"] = None
+
+            except Exception as e:
+                print(f"Error al acceder a {product_url}: {e}")
+                data["imagen"] = None
+                data["comentarios"] = None
+                data["vendedor"] = None
+                data["vendidos"] = None
+                data["descripcion"] = None
+                data["confiable"] = None
 
             except Exception as e:
                 print(
@@ -163,11 +171,12 @@ def mercado_libre(nombre_producto):
                 data["comentarios"] = None
                 data["vendedor"] = None
                 data["vendidos"] = None
+                data["descripcion"] = None
                 data["confiable"] = None
 
             products_array.append(data)
 
     # Mueve el retorno aquí para que devuelva todos los productos
     df = pd.DataFrame(products_array)
-    # print(df)
+    print(df)
     return products_array if products_array else []

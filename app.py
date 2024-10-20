@@ -83,6 +83,7 @@ def search():
                     # Usar el servicio para agregar el nuevo producto
                     ProductoService.agregar_producto(
                         nombre=product["nombre_articulo"],
+                        descripcion=product["descripcion"],
                         precio=precio_actual,
                         image_url=product["imagen"],
                         url_producto=product["link"],
@@ -94,7 +95,6 @@ def search():
                     product["nombre_articulo"],
                     new_vendedor.id,  # Usar el id del vendedor actual
                 )
-                print(product_exists)
 
                 # Ahora puedes agregar las opiniones utilizando el ID del nuevo producto
                 # Validar si hay comentarios antes de iterar

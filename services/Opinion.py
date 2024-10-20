@@ -34,3 +34,7 @@ class OpinionService:
     @staticmethod
     def existe_opinion(opinion_id):
         return Opinion.query.get(opinion_id) is not None
+
+    @staticmethod
+    def buscar_opiniones_producto(producto_id):
+        return Opinion.query.filter_by(producto_id=producto_id).all()

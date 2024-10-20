@@ -18,9 +18,10 @@ class Producto(db.Model):
     opiniones = db.relationship("Opinion", backref="producto", lazy=True)
 
     def __init__(
-        self, nombre, precio, image_url, url_producto, valoracion, vendedor_id
+        self, nombre, descripcion, precio, image_url, url_producto, valoracion, vendedor_id
     ):
         self.nombre = nombre
+        self.descripcion = descripcion
         self.precio = precio
         self.image_url = image_url
         self.url_producto = url_producto

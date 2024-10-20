@@ -95,7 +95,6 @@ def search():
                     product["nombre_articulo"],
                     new_vendedor.id,  # Usar el id del vendedor actual
                 )
-                print(product_exists)
 
                 # Ahora puedes agregar las opiniones utilizando el ID del nuevo producto
                 # Validar si hay comentarios antes de iterar

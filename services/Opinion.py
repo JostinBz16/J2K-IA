@@ -12,6 +12,14 @@ class OpinionService:
 
         nueva_opinion = Opinion(contenido=contenido, producto_id=producto_id)
         db.session.add(nueva_opinion)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()  # Revertir cambios en caso de error
+            print(
+                f"Error al agregar producto: {str(e)}"
+            )  # Mensaje de error en la consola
+            raise e
         return nueva_opinion
 
     @staticmethod

@@ -1,4 +1,4 @@
-from app import db
+from utils.db import db
 
 
 class Categoria(db.Model):

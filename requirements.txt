@@ -8,3 +8,5 @@ Numpy
 Requests
 Flask-SQLAlchemy
 psycopg2-binary
+transformers 
+torch

@@ -1,5 +1,4 @@
 from models.producto import Producto
-from models.vendedor import Vendedor
 from utils.db import db
 
 
@@ -90,7 +89,6 @@ class ProductoService:
 
     @staticmethod
     def existe_producto(nombre, vendedor):
-
         return Producto.query.filter(
             (Producto.nombre == nombre) and (Producto.vendedor_id == vendedor.id)
         ).first()

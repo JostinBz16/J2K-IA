@@ -5,7 +5,6 @@ from IAProcess.AppProcess.rankProduct import rankProduct
 from IAProcess.Web_Scrape.indexscrapping import scrapping
 from IAProcess.AppProcess.analizateProduct import analizateProductsProcess
 from config.config import Config
-from flask import flash
 from templates.formsApp.form import FormSearchProduct
 from utils.db import db  # Importa db desde utils/db.py
 

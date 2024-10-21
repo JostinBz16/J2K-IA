@@ -1,4 +1,4 @@
-from models.detalles import Detalles
+from models.detalle import Detalle
 from models.producto import Producto
 from models.categoria import Categoria
 from utils.db import db
@@ -30,7 +30,7 @@ class DetallesService:
             raise ValueError(f"Categoría con ID {categoria_id} no encontrada")
 
         # Si todo es válido, crear el nuevo detalle
-        nuevo_detalle = Detalles(
+        nuevo_detalle = Detalle(
             producto_id=producto_id,
             categoria_id=categoria_id,
             comentarios_positivos=comentarios_positivos,
@@ -50,7 +50,7 @@ class DetallesService:
 
     @staticmethod
     def buscar_detalles_por_id(detalles_id):
-        return Detalles.query.get(detalles_id)
+        return Detalle.query.get(detalles_id)
 
     @staticmethod
     def modificar_detalles(detalles_id, comentarios_positivos, comentarios_negativos):
@@ -100,8 +100,8 @@ class DetallesService:
 
     @staticmethod
     def buscar_detalles_por_producto(producto_id):
-        return Detalles.query.filter_by(producto_id=producto_id).first()
+        return Detalle.query.filter_by(producto_id=producto_id).first()
 
     @staticmethod
     def buscar_detalles_por_categoria(categoria_id):
-        return Detalles.query.filter_by(categoria_id=categoria_id).all()
+        return Detalle.query.filter_by(categoria_id=categoria_id).all()

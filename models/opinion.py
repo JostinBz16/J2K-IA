@@ -1,15 +1,14 @@
-from app import db
+from utils.db import db
 
 
 class Opinion(db.Model):
     __tablename__ = "opiniones"
 
-    id = db.Column(
-        db.Integer,
-        primary_key=True,
-    )
+    id = db.Column(db.Integer, primary_key=True)
     contenido = db.Column(db.String(255), nullable=False)
-    producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    producto_id = db.Column(
+        db.Integer, db.ForeignKey("productos.id"), nullable=False
+    )  # Relación con Producto
 
     def __init__(self, contenido, producto_id):
         self.contenido = contenido

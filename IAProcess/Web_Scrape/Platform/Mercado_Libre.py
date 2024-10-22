@@ -160,9 +160,9 @@ def mercado_libre(nombre_producto):
                     categoria_tags = product_soup.find_all("li", {"class": "andes-breadcrumb__item"})
                     if categoria_tags:
                         primera_categoria = categoria_tags[0].text.strip()  # Obtener solo la primera categoría
-                        data["categoria"] = primera_categoria  # Guardar solo la primera categoría
+                        data["categorias"] = primera_categoria  # Guardar solo la primera categoría
                     else:
-                        data["categoria"] = None  # Si no se encuentran las categorías, asignar None
+                        data["categorias"] = None  # Si no se encuentran las categorías, asignar None
 
                     # Extraer disponibilidad
                     stock_tag = product_soup.find("span", {"class": "ui-pdp-buybox__quantity__available"})

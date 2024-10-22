@@ -76,7 +76,7 @@ def mercado_libre(nombre_producto):
                 data["calificacion"] = None  # Si no se encuentra el elemento
                 
 
-            # Navegar al enlace del producto para extraer la imagen, comentarios, vendedor, cantidad vendida y descripción
+            # Navegar al enlace del producto para extraer la imagen, comentarios, vendedor, cantidad vendida, descripción, categoría y stock disponible
             product_url = data["link"]
             try:
                 response = requests.get(product_url)
@@ -108,7 +108,13 @@ def mercado_libre(nombre_producto):
                         "div", {"class": "ui-pdp-seller__header__title"}
                     )
                     if vendedor_tag:
-                        data["vendedor"] = vendedor_tag.text.strip().replace("Vendido por", "").strip()  # Extraer el nombre del vendedor
+                        vendedor_nombre = vendedor_tag.text.strip().replace("Vendido por", "").strip()
+                        
+                        # Añadir un espacio después de "Tienda Oficial"
+                        if "Tienda Oficial" in vendedor_nombre:
+                            vendedor_nombre = vendedor_nombre.replace("Tienda Oficial", "Tienda Oficial ")
+                        
+                        data["vendedor"] = vendedor_nombre
                     else:
                         data["vendedor"] = None  # Si no se encuentra el vendedor, asigna None
 
@@ -138,13 +144,38 @@ def mercado_libre(nombre_producto):
                         data["descripcion"] = descripcion_tag.text.strip()  # Extraer la descripción
                     else:
                         data["descripcion"] = None  # Si no se encuentra la descripción, asignar None
-                        
-                    # Extraer si el vendedor es confiable (etiqueta platino)
+
+                    # Extraer si el vendedor es confiable (etiqueta platino o Tienda Oficial)
                     confiable_tag = product_soup.find("div", {"class": "ui-seller-data-status__lider-seller"})
+                    tienda_oficial_tag = product_soup.find("span", {"class": "ui-pdp-seller__label-sold"})  # Buscar si es "Tienda Oficial"
+                    
                     if confiable_tag:
                         data["confiable"] = True  # El vendedor tiene la etiqueta "platino"
+                    elif tienda_oficial_tag and "Tienda Oficial" in tienda_oficial_tag.text:
+                        data["confiable"] = True  # El vendedor es una "Tienda Oficial"
                     else:
-                        data["confiable"] = False  # El vendedor no tiene la etiqueta "platino"
+                        data["confiable"] = False  # Si no es ni "platino" ni "Tienda Oficial"
+
+                    # Extraer la categoría del producto
+                    categoria_tags = product_soup.find_all("a", {"class": "andes-breadcrumb__link"})
+                    if categoria_tags:
+                        categorias = [categoria.text.strip() for categoria in categoria_tags]
+                        data["categorias"] = categorias  # Guardar todas las categorías en una lista
+                    else:
+                        data["categorias"] = None  # Si no se encuentran las categorías, asignar None
+
+                    # Extraer la cantidad de stock disponible
+                    stock_tag = product_soup.find("span", {"class": "ui-pdp-buybox__quantity__available"})
+                    if stock_tag:
+                        stock_texto = stock_tag.text.strip()
+                        # Buscar un número en el texto de stock disponible (ej. "Quedan 3 disponibles")
+                        match = re.search(r"(\d+)", stock_texto)
+                        if match:
+                            data["stock"] = int(match.group(1))  # Extraer la cantidad de stock disponible
+                        else:
+                            data["stock"] = None  # Si no se encuentra un número, asignar None
+                    else:
+                        data["stock"] = None  # Si no se encuentra información de stock, asignar None
 
                 else:
                     data["imagen"] = None
@@ -153,6 +184,8 @@ def mercado_libre(nombre_producto):
                     data["vendidos"] = None
                     data["descripcion"] = None
                     data["confiable"] = None
+                    data["categorias"] = None
+                    data["stock"] = None
 
             except Exception as e:
                 print(f"Error al acceder a {product_url}: {e}")
@@ -162,6 +195,8 @@ def mercado_libre(nombre_producto):
                 data["vendidos"] = None
                 data["descripcion"] = None
                 data["confiable"] = None
+                data["categorias"] = None
+                data["stock"] = None
 
             except Exception as e:
                 print(
@@ -173,6 +208,8 @@ def mercado_libre(nombre_producto):
                 data["vendidos"] = None
                 data["descripcion"] = None
                 data["confiable"] = None
+                data["categorias"] = None
+                data["stock"] = None
 
             products_array.append(data)
 

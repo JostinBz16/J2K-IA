@@ -2,7 +2,10 @@ from utils.convert import Convert  # Importa desde extensiones
 from services.Producto import ProductoService
 from services.Vendedor import VendedorService
 from services.Opinion import OpinionService
+from services.Detalles import DetallesService
+from services.Categorias import CategoriaService
 from utils.db import db
+from utils.Comentarios import Comentario
 import os
 
 
@@ -78,15 +81,36 @@ def analizateProductsProcess(products):
             # Ahora puedes agregar las opiniones utilizando el ID del nuevo producto
             # Validar si hay comentarios antes de iterar
             comentarios = product.get("comentarios", [])
-            if comentarios and isinstance(comentarios, list):
-                # Agregar opiniones si existen comentarios válidos
-                for comentario in comentarios:
+            if comentarios:
+                positivos, negativos = count_opinions(comentarios)
+
+                # Agregar detalles
+                DetallesService.agregar_detalles(
+                    producto_id=product_exists.id,
+                    categoria_id=1,  # Categoría por defecto
+                    comentarios_positivos=positivos,
+                    comentarios_negativos=negativos,
+                )
+
+                # Agregar opiniones
+                for opinion in comentarios:
                     OpinionService.agregar_opinion(
-                        contenido=comentario,
-                        producto_id=product_exists.id,  # Usa el ID del producto agregado
+                        contenido=opinion,
+                        producto_id=product_exists.id,
                     )
 
-                # Commit de todas las adiciones al final de la iteración
     except Exception as e:
         db.session.rollback()
         raise e
+
+    def count_opinions(comentarios):
+        positivos = 0
+        negativos = 0
+        for opinion in comentarios:
+            result = Comentario.validar_comentario_positivo(opinion)
+            if result:
+                positivos += 1
+            else:
+                negativos += 1
+
+    return positivos, negativos

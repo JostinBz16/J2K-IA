@@ -192,8 +192,7 @@ def mercado_libre(nombre_producto):
                     categoria_tags = product_soup.find_all(
                         "li", {"class": "andes-breadcrumb__item"}
                     )
-                    print(categoria_tags)
-                    if categoria_tags:
+                    if categoria_tags is not None and len(categoria_tags) > 0:
                         primera_categoria = categoria_tags[
                             0
                         ].text.strip()  # Obtener solo la primera categoría
@@ -257,7 +256,7 @@ def mercado_libre(nombre_producto):
                     data["vendidos"] = None
                     data["descripcion"] = None
                     data["confiable"] = None
-                    data["categorias"] = None
+                    data["categoria"] = None
                     data["stock"] = None
                     data["disponible"] = None
 
@@ -272,7 +271,7 @@ def mercado_libre(nombre_producto):
                 data["vendidos"] = None
                 data["descripcion"] = None
                 data["confiable"] = None
-                data["categorias"] = None
+                data["categoria"] = None
                 data["stock"] = None
                 data["disponible"] = None
 

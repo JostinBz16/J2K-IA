@@ -67,12 +67,29 @@ def analizateProductsProcess(products):
                     nombre=product["nombre_articulo"],
                     descripcion=product["descripcion"],
                     precio=precio_actual,
+                    stock=product["stock"],
                     image_url=product["imagen"],
                     url_producto=product["link"],
                     valoracion=valoracion,
+                    disponible=product["disponible"],
                     vendedor_id=new_vendedor.id,  # Asegurarse de usar el id del vendedor correcto
                 )
+                
+                existing_categoria = CategoriaService.existe_categoria(
+                    product["categorias"]
+                )
 
+                if existing_categoria is not None:
+                    continue
+                else:
+                    CategoriaService.agregar_categoria(
+                        nombre=product["categorias"]
+                    )
+                    
+                categoria_exist = CategoriaService.existe_categoria(
+                    product["categorias"]
+                )
+                    
             product_exists = ProductoService.existe_producto(
                 product["nombre_articulo"],
                 new_vendedor.id,  # Usar el id del vendedor actual
@@ -87,7 +104,7 @@ def analizateProductsProcess(products):
                 # Agregar detalles
                 DetallesService.agregar_detalles(
                     producto_id=product_exists.id,
-                    categoria_id=1,  # Categoría por defecto
+                    categoria_id=categoria_exist.id,  # Categoría por defecto
                     comentarios_positivos=positivos,
                     comentarios_negativos=negativos,
                 )

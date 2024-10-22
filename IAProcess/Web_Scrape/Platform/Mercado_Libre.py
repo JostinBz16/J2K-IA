@@ -157,25 +157,43 @@ def mercado_libre(nombre_producto):
                         data["confiable"] = False  # Si no es ni "platino" ni "Tienda Oficial"
 
                     # Extraer la categoría del producto
-                    categoria_tags = product_soup.find_all("a", {"class": "andes-breadcrumb__link"})
+                    categoria_tags = product_soup.find_all("li", {"class": "andes-breadcrumb__item"})
                     if categoria_tags:
-                        categorias = [categoria.text.strip() for categoria in categoria_tags]
-                        data["categorias"] = categorias  # Guardar todas las categorías en una lista
+                        primera_categoria = categoria_tags[0].text.strip()  # Obtener solo la primera categoría
+                        data["categoria"] = primera_categoria  # Guardar solo la primera categoría
                     else:
-                        data["categorias"] = None  # Si no se encuentran las categorías, asignar None
+                        data["categoria"] = None  # Si no se encuentran las categorías, asignar None
 
-                    # Extraer la cantidad de stock disponible
+                    # Extraer disponibilidad
                     stock_tag = product_soup.find("span", {"class": "ui-pdp-buybox__quantity__available"})
-                    if stock_tag:
-                        stock_texto = stock_tag.text.strip()
-                        # Buscar un número en el texto de stock disponible (ej. "Quedan 3 disponibles")
-                        match = re.search(r"(\d+)", stock_texto)
-                        if match:
-                            data["stock"] = int(match.group(1))  # Extraer la cantidad de stock disponible
+                    disponible_tag = product_soup.find("div", {"class": "ui-pdp-stock-and-full"})
+
+                    if disponible_tag is None:
+                        # Verificar si es el último disponible
+                        ultimo_tag = product_soup.find("div", {"class": "ui-pdp-buybox__quantity"})
+                        if ultimo_tag and "¡Última disponible!" in ultimo_tag.text.strip():  # Validar el texto dentro de la etiqueta
+                            data["disponible"] = True    
+                            data["stock"] = 1
                         else:
-                            data["stock"] = None  # Si no se encuentra un número, asignar None
+                            data["disponible"] = False
+                            data["stock"] = 0
                     else:
-                        data["stock"] = None  # Si no se encuentra información de stock, asignar None
+                        # Extraer texto de disponibilidad y verificar si hay stock disponible
+                        disponible_text = disponible_tag.get_text(strip=True)
+                        if "Stock disponible" in disponible_text:  # Validar el texto dentro de la etiqueta
+                            data["disponible"] = True
+                            if stock_tag:
+                                stock_texto = stock_tag.text.strip()
+                                # Buscar un número en el texto de stock disponible (ej. "Quedan 3 disponibles")
+                                match = re.search(r"(\d+)", stock_texto)
+                                if match:
+                                    data["stock"] = int(match.group(1))  # Extraer la cantidad de stock disponible
+                            else:
+                                data["stock"] = 0  # Si no se encuentra información de stock
+                        else:
+                            data["disponible"] = False
+                            data["stock"] = 0    
+                        
 
                 else:
                     data["imagen"] = None
@@ -186,19 +204,10 @@ def mercado_libre(nombre_producto):
                     data["confiable"] = None
                     data["categorias"] = None
                     data["stock"] = None
+                    data["disponible"] = None
 
             except Exception as e:
                 print(f"Error al acceder a {product_url}: {e}")
-                data["imagen"] = None
-                data["comentarios"] = None
-                data["vendedor"] = None
-                data["vendidos"] = None
-                data["descripcion"] = None
-                data["confiable"] = None
-                data["categorias"] = None
-                data["stock"] = None
-
-            except Exception as e:
                 print(
                     f"Error al hacer la solicitud de la imagen, comentarios, vendedor y cantidad vendida: {e}"
                 )
@@ -210,6 +219,7 @@ def mercado_libre(nombre_producto):
                 data["confiable"] = None
                 data["categorias"] = None
                 data["stock"] = None
+                data["disponible"] = None
 
             products_array.append(data)
 

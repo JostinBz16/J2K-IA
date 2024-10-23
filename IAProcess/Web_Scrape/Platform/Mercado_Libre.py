@@ -189,20 +189,12 @@ def mercado_libre(nombre_producto):
                         )
 
                     # Extraer la categoría del producto
-                    categoria_tags = product_soup.find_all(
-                        "li", {"class": "andes-breadcrumb__item"}
-                    )
-                    if categoria_tags is not None and len(categoria_tags) > 0:
-                        primera_categoria = categoria_tags[
-                            0
-                        ].text.strip()  # Obtener solo la primera categoría
-                        data["categoria"] = (
-                            primera_categoria  # Guardar solo la primera categoría
-                        )
+                    categoria_tags = product_soup.find_all("li", {"class": "andes-breadcrumb__item"})
+                    if categoria_tags:
+                        primera_categoria = categoria_tags[0].text.strip()  # Obtener solo la primera categoría
+                        data["categoria"] = primera_categoria  # Guardar solo la primera categoría
                     else:
-                        data["categoria"] = (
-                            None  # Si no se encuentran las categorías, asignar None
-                        )
+                        data["categoria"] = None  # Si no se encuentran las categorías, asignar None
 
                     # Extraer disponibilidad
                     stock_tag = product_soup.find(

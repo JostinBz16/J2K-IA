@@ -11,8 +11,18 @@ import traceback
 
 class NoProductsFoundException(Exception):
     """Excepción personalizada para cuando no se encuentran productos"""
-
     pass
+
+def count_opinions(comentarios):
+    positivos = 0
+    negativos = 0
+    for opinion in comentarios:
+        result = Comentario.validar_comentario_positivo(opinion)
+        if result:
+            positivos += 1
+        else:
+            negativos += 1
+    return positivos, negativos
 
 
 def analizateProductsProcess(products):
@@ -31,7 +41,7 @@ def analizateProductsProcess(products):
                 else 0.0
             )
 
-            if products["vendedor"] == "" or products["vendedor"] is None:
+            if  product["vendedor"] == "" or product["vendedor"] is None:
                 continue
             else:
                 if vendedor is None:
@@ -112,15 +122,3 @@ def analizateProductsProcess(products):
         db.session.rollback()
         traceback.print_exc()
         raise e
-
-    def count_opinions(comentarios):
-        positivos = 0
-        negativos = 0
-        for opinion in comentarios:
-            result = Comentario.validar_comentario_positivo(opinion)
-            if result:
-                positivos += 1
-            else:
-                negativos += 1
-
-    return positivos, negativos

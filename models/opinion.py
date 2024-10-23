@@ -5,7 +5,7 @@ class Opinion(db.Model):
     __tablename__ = "opiniones"
 
     id = db.Column(db.Integer, primary_key=True)
-    contenido = db.Column(db.String(255), nullable=False)
+    contenido = db.Column(db.Text, nullable=False)
     producto_id = db.Column(
         db.Integer, db.ForeignKey("productos.id"), nullable=False
     )  # Relación con Producto

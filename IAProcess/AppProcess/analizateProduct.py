@@ -11,7 +11,9 @@ import traceback
 
 class NoProductsFoundException(Exception):
     """Excepción personalizada para cuando no se encuentran productos"""
+
     pass
+
 
 def count_opinions(comentarios):
     positivos = 0
@@ -41,7 +43,7 @@ def analizateProductsProcess(products):
                 else 0.0
             )
 
-            if  product["vendedor"] == "" or product["vendedor"] is None:
+            if product["vendedor"] == "" or product["vendedor"] is None:
                 continue
             else:
                 if vendedor is None:

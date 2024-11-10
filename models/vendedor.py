@@ -5,7 +5,7 @@ class Vendedor(db.Model):
     __tablename__ = "vendedores"
 
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
+    nombre = db.Column(db.Text, nullable=False)
     confiable = db.Column(db.Boolean, default=False)  # Si el vendedor es confiable
 
     # Relación uno a muchos con productos

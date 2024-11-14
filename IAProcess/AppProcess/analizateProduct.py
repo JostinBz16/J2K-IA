@@ -43,6 +43,12 @@ def analizateProductsProcess(products):
                 else 0.0
             )
 
+            cantidad_valoracion = (
+                int(product["cantidad_valoraciones"])
+                if product["cantidad_valoraciones"] not in [None, "", "null"]
+                else 0
+            )
+
             if product["vendedor"] == "" or product["vendedor"] is None:
                 continue
             else:
@@ -78,7 +84,6 @@ def analizateProductsProcess(products):
                     stock=product["stock"],
                     image_url=product["imagen"],
                     url_producto=product["link"],
-                    valoracion=valoracion,
                     disponible=product["disponible"],
                     vendedor_id=new_vendedor.id,  # Asegurarse de usar el id del vendedor correcto
                 )
@@ -101,24 +106,24 @@ def analizateProductsProcess(products):
             )
 
             # Validar si hay comentarios antes de iterar
-            comentarios = product.get("comentarios", [])
-            if comentarios:
-                positivos, negativos = count_opinions(comentarios)
+            # comentarios = product.get("comentarios", [])
+            # if comentarios:
+            #     positivos, negativos = count_opinions(comentarios)
 
-                # Agregar detalles (relación entre producto y categoría)
-                DetallesService.agregar_detalles(
-                    producto_id=product_exists.id,
-                    categoria_id=categoria_exist.id,  # ID de la categoría encontrada o agregada
-                    comentarios_positivos=positivos,
-                    comentarios_negativos=negativos,
-                )
+            # Agregar detalles (relación entre producto y categoría)
+            DetallesService.agregar_detalles(
+                producto_id=product_exists.id,
+                categoria_id=categoria_exist.id,  # ID de la categoría encontrada o agregada
+                valoracion=valoracion,
+                cantidad_valoracion=cantidad_valoracion,
+            )
 
-                # Agregar opiniones
-                for opinion in comentarios:
-                    OpinionService.agregar_opinion(
-                        contenido=opinion,
-                        producto_id=product_exists.id,  # Relacionar con el producto
-                    )
+            # Agregar opiniones
+            # for opinion in comentarios:
+            #     OpinionService.agregar_opinion(
+            #         contenido=opinion,
+            #         producto_id=product_exists.id,  # Relacionar con el producto
+            #     )
 
     except Exception as e:
         db.session.rollback()

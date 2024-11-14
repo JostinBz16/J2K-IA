@@ -11,13 +11,23 @@ class Detalle(db.Model):
     categoria_id = db.Column(
         db.Integer, db.ForeignKey("categorias.id"), nullable=False
     )  # Relación con Categoria
-    comentarios_positivos = db.Column(db.Integer, nullable=False)
-    comentarios_negativos = db.Column(db.Integer, nullable=False)
+    valoracion = db.Column(db.Float, nullable=True)
+    cantida_valoracion = db.Column(db.Integer, nullable=True)
+    # comentarios_positivos = db.Column(db.Integer, nullable=False)
+    # comentarios_negativos = db.Column(db.Integer, nullable=False)
 
     def __init__(
-        self, producto_id, categoria_id, comentarios_positivos, comentarios_negativos
+        self,
+        producto_id,
+        categoria_id,
+        valoracion,
+        cantida_valoracion,
+        # comentarios_positivos,
+        # comentarios_negativos,
     ):
         self.producto_id = producto_id
         self.categoria_id = categoria_id
-        self.comentarios_positivos = comentarios_positivos
-        self.comentarios_negativos = comentarios_negativos
+        self.valoracion = valoracion
+        self.cantida_valoracion = cantida_valoracion
+        # self.comentarios_positivos = comentarios_positivos
+        # self.comentarios_negativos = comentarios_negativos

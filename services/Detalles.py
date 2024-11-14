@@ -6,17 +6,11 @@ from utils.db import db
 
 class DetallesService:
     @staticmethod
-    def agregar_detalles(
-        producto_id, categoria_id, comentarios_positivos, comentarios_negativos
-    ):
+    def agregar_detalles(producto_id, categoria_id, valoracion, cantidad_valoracion):
         # Validar que los valores no sean nulos o vacíos
         if not producto_id or not categoria_id:
             raise ValueError(
                 "El producto y la categoría no pueden ser nulos o indefinidos"
-            )
-        if comentarios_positivos is None or comentarios_negativos is None:
-            raise ValueError(
-                "Los comentarios positivos y negativos no pueden ser nulos"
             )
 
         # Verificar que el producto exista
@@ -33,12 +27,11 @@ class DetallesService:
         nuevo_detalle = Detalle(
             producto_id=producto_id,
             categoria_id=categoria_id,
-            comentarios_positivos=comentarios_positivos,
-            comentarios_negativos=comentarios_negativos,
+            valoracion=valoracion,
+            cantida_valoracion=cantidad_valoracion,
         )
         db.session.add(nuevo_detalle)
 
-        # Intenta hacer commit y captura excepciones
         try:
             db.session.commit()
         except Exception as e:
@@ -53,12 +46,25 @@ class DetallesService:
         return Detalle.query.get(detalles_id)
 
     @staticmethod
-    def modificar_detalles(detalles_id, comentarios_positivos, comentarios_negativos):
+    def modificar_detalles(
+        detalles_id, id_producto, id_categoria, valoracion, cantidad_valoracion
+    ):
         # Validar que los valores no sean nulos o vacíos
-        if comentarios_positivos is None or comentarios_negativos is None:
+        if not detalles_id or not id_producto or not id_categoria:
             raise ValueError(
-                "Los comentarios positivos y negativos no pueden ser nulos"
+                "El ID del detalle, el ID del producto y la categoría no pueden ser nulos o indefinidos"
             )
+
+        # Verificar que el detalle exista
+        detalles = DetallesService.buscar_detalles_por_id(detalles_id)
+        if detalles is None:
+            raise ValueError(f"Detalles con ID {detalles_id} no encontrados")
+
+        # Actualizar los valores del detalle
+        detalles.producto_id = id_producto
+        detalles.categoria_id = id_categoria
+        detalles.valoracion = valoracion
+        detalles.cantida_valoracion = cantidad_valoracion
 
         detalles = DetallesService.buscar_detalles_por_id(detalles_id)
         if detalles:
@@ -75,16 +81,15 @@ class DetallesService:
                     f"Categoría con ID {detalles.categoria_id} no encontrada"
                 )
 
-            detalles.comentarios_positivos = comentarios_positivos
-            detalles.comentarios_negativos = comentarios_negativos
-
             try:
                 db.session.commit()
+                return detalles
             except Exception as e:
                 db.session.rollback()
                 print(f"Error al modificar detalles: {str(e)}")
                 raise e
-        return detalles
+        else:
+            raise ValueError(f"Detalles con ID {detalles_id} no encontrados")
 
     @staticmethod
     def eliminar_detalles(detalles_id):

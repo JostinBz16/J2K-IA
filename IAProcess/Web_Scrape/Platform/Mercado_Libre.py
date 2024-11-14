@@ -15,7 +15,11 @@ def mercado_libre(nombre_producto):
         )
     )
     contenido = r.content
-
+    if r.status_code != 200:
+        print(
+            f"Error al obtener la página para {articulo}. Status Code: {r.status_code}"
+        )
+        return []  # Retornar vacío si la solicitud falla
     soup = BeautifulSoup(contenido, "html.parser")
 
     # Última página
@@ -99,9 +103,7 @@ def mercado_libre(nombre_producto):
                     comentarios = []
                     comentario_tags = product_soup.find_all(
                         "p",
-                        {
-                            "class": "ui-review-capability__summary__plain_text__summary_container"
-                        },
+                        {"class": "ui-review-capability-comments__comment__content "},
                     )
                     if comentario_tags:
                         for comentario in comentario_tags:
@@ -189,12 +191,20 @@ def mercado_libre(nombre_producto):
                         )
 
                     # Extraer la categoría del producto
-                    categoria_tags = product_soup.find_all("li", {"class": "andes-breadcrumb__item"})
+                    categoria_tags = product_soup.find_all(
+                        "li", {"class": "andes-breadcrumb__item"}
+                    )
                     if categoria_tags:
-                        primera_categoria = categoria_tags[0].text.strip()  # Obtener solo la primera categoría
-                        data["categoria"] = primera_categoria  # Guardar solo la primera categoría
+                        primera_categoria = categoria_tags[
+                            0
+                        ].text.strip()  # Obtener solo la primera categoría
+                        data["categoria"] = (
+                            primera_categoria  # Guardar solo la primera categoría
+                        )
                     else:
-                        data["categoria"] = None  # Si no se encuentran las categorías, asignar None
+                        data["categoria"] = (
+                            None  # Si no se encuentran las categorías, asignar None
+                        )
 
                     # Extraer disponibilidad
                     stock_tag = product_soup.find(

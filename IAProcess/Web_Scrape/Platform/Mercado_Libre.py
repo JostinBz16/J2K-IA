@@ -2,18 +2,30 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
-
+import random
 
 # Función para hacer scraping de los listados de productos en Mercado Libre
 
 
 def mercado_libre(nombre_producto):
     articulo = nombre_producto
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15A372 Safari/604.1",
+    ]
+
+    headers = {
+        "User-Agent": random.choice(user_agents),
+        "Accept-Language": "en-US, en;q=0.5",
+    }
     r = requests.get(
         "https://listado.mercadolibre.com.co/{}#D[A:{}]".format(
             articulo.replace(" ", "-"), articulo.replace(" ", "-")
-        )
+        ),
+        headers=headers,
     )
+
     contenido = r.content
     if r.status_code != 200:
         print(

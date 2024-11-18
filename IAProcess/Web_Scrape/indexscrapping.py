@@ -2,8 +2,8 @@ import concurrent.futures
 import threading
 
 # Otras plataformas que quieres agregar (a futuro)
+from IAProcess.Web_Scrape.Platform.Amazon import buscar_productos_amazon
 from IAProcess.Web_Scrape.Platform.Mercado_Libre import mercado_libre
-from IAProcess.Web_Scrape.Platform.Fallabela import falabella
 
 
 def scrapping(nombre_producto):
@@ -15,7 +15,7 @@ def scrapping(nombre_producto):
 
     plataformas = [
         mercado_libre,
-        # falabella
+        buscar_productos_amazon,
         # otra_plataforma,
     ]
 

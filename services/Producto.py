@@ -11,7 +11,7 @@ class ProductoService:
         stock,
         image_url,
         url_producto,
-        valoracion,
+        # valoracion,
         disponible,
         vendedor_id,
     ):
@@ -28,7 +28,7 @@ class ProductoService:
             stock=stock,
             image_url=image_url,
             url_producto=url_producto,
-            valoracion=valoracion,
+            # valoracion=valoracion,
             disponible=disponible,
             vendedor_id=vendedor_id,
         )
@@ -62,7 +62,7 @@ class ProductoService:
         stock,
         image_url,
         url_producto,
-        valoracion,
+        # valoracion,
         disponible,
     ):
         producto = ProductoService.buscar_producto_por_id(producto_id)
@@ -73,15 +73,36 @@ class ProductoService:
             producto.stock = stock
             producto.image_url = image_url
             producto.url_producto = url_producto
-            producto.valoracion = valoracion
+            # producto.valoracion = valoracion
             producto.disponible = disponible
-        return producto
+
+            try:
+                db.session.commit()
+                return producto
+            except Exception as e:
+                db.session.rollback()  # Revertir cambios en caso de error
+                print(
+                    f"Error al modificar producto: {str(e)}"
+                )  # Mensaje de error en la consola
+                raise e  # Vuelve a lanzar la excepción
+        else:
+            raise ValueError(f"Producto con ID {producto_id} no encontrado")
 
     @staticmethod
     def eliminar_producto(producto_id):
         producto = ProductoService.buscar_producto_por_id(producto_id)
         if producto:
             db.session.delete(producto)
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()  # Revertir cambios en caso de error
+                print(
+                    f"Error al eliminar producto: {str(e)}"
+                )  # Mensaje de error en la consola
+                raise e  # Vuelve a lanzar la excepción
+        else:
+            raise ValueError(f"Producto con ID {producto_id} no encontrado")
 
     @staticmethod
     def buscar_producto(nombre):

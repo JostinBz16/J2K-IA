@@ -11,7 +11,7 @@ class Producto(db.Model):
     stock = db.Column(db.Integer, nullable=False)
     image_url = db.Column(db.Text, nullable=True)
     url_producto = db.Column(db.Text, nullable=True)
-    valoracion = db.Column(db.Float, nullable=True)
+    # valoracion = db.Column(db.Float, nullable=True)
     disponible = db.Column(db.Boolean, default=False)
 
     # Clave foránea para asociar el producto con un vendedor
@@ -29,7 +29,7 @@ class Producto(db.Model):
         stock,
         image_url,
         url_producto,
-        valoracion,
+        # valoracion,
         disponible,
         vendedor_id,
     ):
@@ -39,7 +39,7 @@ class Producto(db.Model):
         self.stock = stock
         self.image_url = image_url
         self.url_producto = url_producto
-        self.valoracion = valoracion
+        # self.valoracion = valoracion
         self.disponible = disponible
         self.vendedor_id = vendedor_id
 

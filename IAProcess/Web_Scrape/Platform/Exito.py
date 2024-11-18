@@ -2,101 +2,97 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
-import traceback
 
 
-# Función para hacer scraping de los listados de productos en Alkosto
-def alkosto(nombre_producto):
+def exito_scraper(nombre_producto):
+    base_url = f"https://www.exito.com/s?q={nombre_producto.replace(' ', '+')}&sort=score_desc&page=0"
+    response = requests.get(base_url)
+    soup = BeautifulSoup(response.content, "html.parser")
+    products = []
+
+    # Obtener el número de páginas
     try:
-        base_url = f"https://www.alkosto.com/search?text={nombre_producto}"
-        r = requests.get(base_url)
-        contenido = r.content
-        soup = BeautifulSoup(contenido, "html.parser")
+        pagination = soup.find(
+            "div", {"class": "Pagination_containerLinkPagination__keSJG"}
+        ).find_all("ul")
+        print(pagination)
+        last_page_modified = int(
+            pagination[-1].text
+        )  # Obtenemos la penúltima entrada que contiene el número de la última página
+    except:
+        last_page_modified = 0  # En caso de error, asumir que solo hay una página
+    print(last_page_modified)
+    # Recorrer todas las páginas de resultados
+    for page in range(0, last_page_modified):
+        result = requests.get(
+            "https://www.exito.com/s?q={}&sort=score_desc&page={}".format(
+                nombre_producto.replace(" ", "-"), (page * 50) + 1
+            )
+        )
+        content_pagination = result.content
+        page_soup = BeautifulSoup(content_pagination, "html.parser")
+        print(page_soup)
+        # Extraer los datos de los productos
+        product_cards = page_soup.find_all(
+            "article", {"productCard_productCard__M0677 productCard_column__Lp3OF"}
+        )
+        for card in product_cards:
+            product = {}
 
-        products_array = []
+            # Nombre del producto
+            name_tag = card.find("div", {"class": "styles_name__qQJiK"})
+            product["nombre"] = name_tag.text.strip() if name_tag else None
 
-        # Obtener el número de páginas
-        try:
-            pagination = soup.find_all("button", {"class": "ais-InfiniteHits-loadMore"})
-            last_page_modified = len(pagination)  # Número de páginas
-        except:
-            last_page_modified = 1  # En caso de error, solo una página
+            # Precio del producto
+            price_tag = card.find(
+                "p", {"class": "ProductPrice_container__price__XmMWA"}
+            )
+            if price_tag:
+                raw_price = price_tag.text.strip()
+                product["precio"] = float(raw_price.replace("$", "").replace(",", "."))
+            else:
+                product["precio"] = None
 
-        # Recorrer todas las páginas de resultados
-        for page_num in range(1, last_page_modified + 1):
-            # Actualizar URL de la página
-            page_url = f"https://www.alkosto.com/search?text={nombre_producto}&page={page_num}&sort=relevance"
-            result = requests.get(page_url)
-            content_pagination = result.content
-            soup = BeautifulSoup(content_pagination, "html.parser")
+            # URL de la imagen del producto
+            image_tag = card.find("img", {"class": "styles_productCardImage__RBIdi"})
+            if image_tag and "src" in image_tag.attrs:
+                product["imagen"] = image_tag["src"]
+            else:
+                product["imagen"] = None
 
-            # Extraer todos los bloques de producto
-            alldivs = soup.find_all("div", {"class": "product__item__information"})
+            # Nombre del vendedor
+            seller_tag = card.find("span", {"data-fs-product-details-seller__name"})
+            if seller_tag:
+                seller_name = seller_tag.text.strip().replace("Vendido por: ", "")
+                product["vendedor"] = seller_name
+            else:
+                product["vendedor"] = None
 
-            for div in alldivs:
-                data = {}
+            # Calificación del producto
+            rating_tag = card.find(
+                "span", {"data-fs-reviews-reviews-ratings-calification"}
+            )
+            if rating_tag:
+                product["calificacion"] = float(rating_tag.text.strip())
+            else:
+                product["calificacion"] = None
 
-                # Extraer el nombre del producto
-                name_tag = div.find("h3", {"class": "product__item__top__title"})
-                data["nombre"] = name_tag.text.strip() if name_tag else None
+            products.append(product)
 
-                # Extraer URL del producto
-                url_tag = div.find("a", {"class": "product__item__information__image"})
-                if url_tag and "href" in url_tag.attrs:
-                    data["link"] = url_tag["href"]
-
-                # Extraer el precio del producto
-                price_tag = div.find("span", {"class": "price"})
-                if price_tag:
-                    raw_price = price_tag.text.strip()
-                    data["precio"] = raw_price.replace("$", "")
-
-                # Extraer el precio anterior del producto
-                old_price_tag = div.find(
-                    "p", {"class": "product__price--discounts__old"}
-                )
-                if old_price_tag:
-                    data["precio_antes"] = old_price_tag.text.strip().replace("$", "")
-                else:
-                    data["precio_antes"] = None
-
-                # Extraer la URL de la imagen del producto
-                img_tag = div.find(
-                    "img", {"class": "product__item__information__image"}
-                )
-                data["imagen"] = (
-                    img_tag["src"] if img_tag and "src" in img_tag.attrs else None
-                )
-
-                # Extraer comentarios
-                comentarios_tag = div.find_all("div", {"class": "yotpo-read-more-text"})
-                comentarios = [
-                    comentario.text.strip() for comentario in comentarios_tag
-                ]
-                data["comentarios"] = comentarios if comentarios else None
-
-                products_array.append(data)
-
-        return products_array if products_array else []
-    except Exception as e:
-        print(f"Error: {e}")
+    return products
 
 
 # Solicitar al usuario el nombre del producto a buscar
-nombre_producto = input("¿Qué producto quieres buscar?: ")
-productos = alkosto(nombre_producto)
+nombre_producto = input("¿Qué producto quieres buscar en Éxito?: ")
+productos = exito_scraper(nombre_producto)
 
 # Mostrar los resultados obtenidos
 if productos:
     for producto in productos:
-        nombre = producto.get("nombre", "N/A")
-        precio = producto.get("precio", "N/A")
-        precio_antes = producto.get("precio_antes", "N/A")
-        imagen = producto.get("imagen", "N/A")
-        url = producto.get("link", "N/A")
-        comentarios = producto.get("comentarios", "N/A")
-        print(
-            f"Nombre: {nombre}, Precio: {precio}, Precio Anterior: {precio_antes}, Imagen: {imagen}, Link: {url}, Comentarios: {comentarios}"
-        )
+        print(f"Nombre: {producto.get('nombre', 'N/A')}")
+        print(f"Precio: {producto.get('precio', 'N/A')}")
+        print(f"Imagen: {producto.get('imagen', 'N/A')}")
+        print(f"Vendedor: {producto.get('vendedor', 'N/A')}")
+        print(f"Calificación: {producto.get('calificacion', 'N/A')}")
 else:
     print("No se encontraron productos.")

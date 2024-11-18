@@ -10,3 +10,4 @@ Flask-SQLAlchemy
 psycopg2-binary
 transformers
 torch
+google-generativeai

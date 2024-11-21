@@ -110,3 +110,7 @@ class DetallesService:
     @staticmethod
     def buscar_detalles_por_categoria(categoria_id):
         return Detalle.query.filter_by(categoria_id=categoria_id).all()
+    
+    @staticmethod
+    def buscarTodo():
+        return Detalle.query.all()  

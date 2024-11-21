@@ -69,9 +69,9 @@ def buscar_productos_amazon(query):
                 if precio:
                     precio_usd = precio.text.strip()
                     # Convertir precio de USD a pesos y formatearlo
-                    data["precio_pesos"] = convertir_a_pesos(precio_usd)
+                    data["precio"] = convertir_a_pesos(precio_usd)
                 else:
-                    data["precio_pesos"] = None
+                    data["precio"] = None
 
                 categoria_tag = soup.find("div", {"id": "departments"})
 
@@ -117,7 +117,7 @@ def buscar_productos_amazon(query):
                         nombre_articulo_tag = product_soup.find(
                             "h1", {"id": "title"}
                         ).find("span")
-                        data["nombre_articulo"] = (
+                        data["nombre"] = (
                             nombre_articulo_tag.text.strip()
                             if nombre_articulo_tag
                             else None
@@ -128,9 +128,9 @@ def buscar_productos_amazon(query):
                             "img", {"class": "a-dynamic-image"}
                         )
                         if imagen_tag and "src" in imagen_tag.attrs:
-                            data["imagen_detalle"] = imagen_tag["src"]
+                            data["imagen"] = imagen_tag["src"]
                         else:
-                            data["imagen_detalle"] = None
+                            data["imagen"] = None
 
                         # Extraer vendedor
                         vendedor_tag = product_soup.find("a", {"id": "bylineInfo"})
@@ -195,7 +195,7 @@ def buscar_productos_amazon(query):
                 pagina += 1
                 time.sleep(random.uniform(1, 3))  # Espera entre páginas
             else:
-                print("Última página alcanzada.")
+
                 break
 
         elif response.status_code == 503:
@@ -211,16 +211,17 @@ def buscar_productos_amazon(query):
     # Convertir la lista de productos en un DataFrame de pandas
     df = pd.DataFrame(productos_array)
 
-    # Guardar los datos en un archivo JSON llamado amazon.json
-    with open("amazon.json", "w", encoding="utf-8") as f:
-        json.dump(productos_array, f, indent=4, ensure_ascii=False)
+    # # Guardar los datos en un archivo JSON llamado amazon.json
+    # with open("amazon.json", "w", encoding="utf-8") as f:
+    #     json.dump(productos_array, f, indent=4, ensure_ascii=False)
 
     # Mostrar el DataFrame con columnas truncadas, excepto la de "link"
+    print("Amazon")
     print(df)
 
     return productos_array if productos_array else []
 
 
 # Solicitar al usuario el nombre del producto a buscar
-producto_buscar = input("Ingrese el nombre del producto a buscar en Amazon: ")
-df_amazon = buscar_productos_amazon(producto_buscar)
+# producto_buscar = input("Ingrese el nombre del producto a buscar en Amazon: ")
+# df_amazon = buscar_productos_amazon(producto_buscar)

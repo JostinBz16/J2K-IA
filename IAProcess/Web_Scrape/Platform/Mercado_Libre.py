@@ -63,21 +63,21 @@ def mercado_libre(nombre_producto):
         product_urls = []  # Lista para almacenar los enlaces de productos
         for item in alldivs:
             data = {}
-            data["nombre_articulo"] = item.find(
+            data["nombre"] = item.find(
                 "h2", {"class": "poly-box poly-component__title"}
             ).text
             data["precio"] = item.find("span", {"class": "andes-money-amount"}).text
 
-            # Extraer el precio anterior
-            precio_antes_tag = item.find(
-                "span", {"class": "andes-money-amount__fraction"}
-            )
-            if precio_antes_tag:
-                data["precio_antes"] = (
-                    precio_antes_tag.text.strip()
-                )  # Extrae y limpia el texto del precio anterior
-            else:
-                data["precio_antes"] = None  # Si no se encuentra, asigna None
+            # # Extraer el precio anterior
+            # precio_antes_tag = item.find(
+            #     "span", {"class": "andes-money-amount__fraction"}
+            # )
+            # if precio_antes_tag:
+            #     data["precio_antes"] = (
+            #         precio_antes_tag.text.strip()
+            #     )  # Extrae y limpia el texto del precio anterior
+            # else:
+            #     data["precio_antes"] = None  # Si no se encuentra, asigna None
 
             data["link"] = item.find("a", {"class": ""})["href"]
             product_urls.append(
@@ -166,6 +166,19 @@ def mercado_libre(nombre_producto):
                         data["vendidos"] = (
                             None  # Si no se encuentra la cantidad de vendidos, asignar None
                         )
+
+                        # Extraer la cantidad de votos
+                        votos_tag = product_soup.find(
+                            "span", {"class": "ui-pdp-review__amount"}
+                        )
+                        if votos_tag:
+                            votos_texto = votos_tag.text.strip()
+                            # Limpiar el formato del texto para extraer solo el número de votos
+                            match = re.search(r"\((\d+)\)", votos_texto)
+                            if match:
+                                data["cantidad_calificacion"] = int(match.group(1))
+                            else:
+                                data["cantidad_calificacion"] = None
 
                     # Extraer la descripción del producto
                     descripcion_tag = product_soup.find(
@@ -293,5 +306,6 @@ def mercado_libre(nombre_producto):
 
     # Mueve el retorno aquí para que devuelva todos los productos
     df = pd.DataFrame(products_array)
+    print("Mercado Libre")
     print(df)
     return products_array if products_array else []

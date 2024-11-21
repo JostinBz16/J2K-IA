@@ -35,14 +35,21 @@ def analizateProductsProcess(products):
 
         for product in products:
             if (
-                (product["nombre"] is [None, ""])
-                or (product["precio"] is [None, ""])
-                or (product["calificacion"] is [None, ""])
-                or (product["cantidad_calificacion"] is [None, ""])
-                or (product["vendedor"] is [None, ""])
-                or (product["link"] is [None, ""])
+                product["nombre"] is None
+                or product["nombre"] == ""
+                or product["precio"] is None
+                or product["precio"] == ""
+                or product["calificacion"] is None
+                or product["calificacion"] == ""
+                or product["cantidad_calificacion"] is None
+                or product["cantidad_calificacion"] == ""
+                or product["vendedor"] is None
+                or product["vendedor"] == ""
+                or product["link"] is None
+                or product["link"] == ""
             ):
                 continue
+
             else:
                 # Verificar si el vendedor ya existe en la base de datos
                 print(product["vendedor"])

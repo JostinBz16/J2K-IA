@@ -97,11 +97,18 @@ def buscar_productos_amazon(query):
                 data["link"] = f"https://www.amazon.com{enlace_relativo}"
 
                 # Calificación del producto
-                calificacion = item.find("span", {"class": "a-icon-alt"})
+                calificacion = item.find("span", {"class": "a-size-base"})
                 if calificacion:
                     data["calificacion"] = calificacion.text.strip()
                 else:
                     data["calificacion"] = None
+                    
+                # Extraer la cantidad de votos del producto
+                cantidad_votos = item.find("span", {"class": "a-size-base"})
+                if cantidad_votos:
+                    data["cantidad_calificacion"] = cantidad_votos.text.strip()
+                else:
+                    data["cantidad_calificacion"] = None
 
                 # Navegar al enlace del producto para extraer más detalles
                 product_url = data["link"]
@@ -157,29 +164,40 @@ def buscar_productos_amazon(query):
                         # Buscar el primer <li> dentro del <ul> y luego el <span> dentro del <a>
                         # Extraer categoría específica desde el div correcto
                         # Extraer categoría general desde el div de departamentos
+                        
+                        # Extraer disponibilidad
+                        disponibilidad_tag = product_soup.find(
+                            "span", {"class": "a-size-medium"}
+                        )
+                        if disponibilidad_tag:
+                            data["disponible"] = disponibilidad_tag.text.strip()
+                        else:
+                            data["disponible"] = None
 
                         # Extraer stock disponible
-                        # stock_tag = product_soup.find("div", {"class": "aa-section a-spacing-none"})
-                        # if stock_tag:
-                        #     data["stock"] = stock_tag.text.strip()
-                        # else:
-                        #     data["stock"] = None
+                        stock_tag = product_soup.find("span", {"class": "a-size-medium"})
+                        if stock_tag:
+                            data["disponible"] = True
+                            data["stock"] = 1
+                        else:
+                            data["disponible"] = False
+                            data["stock"] = 0
 
                     else:
                         # Si no se puede acceder a la página del producto
-                        data["imagen_detalle"] = None
+                        data["imagen"] = None
                         data["vendedor"] = None
                         data["descripcion"] = None
                         data["categoria"] = None
-                        # data["stock"] = None
+                        data["stock"] = None
 
                 except Exception as e:
                     print(f"Error al acceder al producto: {product_url} - {e}")
-                    data["imagen_detalle"] = None
+                    data["imagen"] = None
                     data["vendedor"] = None
                     data["descripcion"] = None
                     data["categoria"] = None
-                    # data["stock"] = None
+                    data["stock"] = None
 
                 # Agregar el producto a la lista
                 productos_array.append(data)

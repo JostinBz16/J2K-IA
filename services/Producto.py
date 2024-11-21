@@ -54,6 +54,11 @@ class ProductoService:
         return producto
 
     @staticmethod
+    def buscartodos():
+        productos = Producto.query.all()
+        return productos
+
+    @staticmethod
     def modificar_producto(
         producto_id,
         nombre,

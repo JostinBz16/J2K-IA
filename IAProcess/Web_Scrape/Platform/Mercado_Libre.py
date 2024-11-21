@@ -2,20 +2,36 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
-
+import random
 
 # Función para hacer scraping de los listados de productos en Mercado Libre
 
 
 def mercado_libre(nombre_producto):
     articulo = nombre_producto
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15A372 Safari/604.1",
+    ]
+
+    headers = {
+        "User-Agent": random.choice(user_agents),
+        "Accept-Language": "en-US, en;q=0.5",
+    }
     r = requests.get(
         "https://listado.mercadolibre.com.co/{}#D[A:{}]".format(
             articulo.replace(" ", "-"), articulo.replace(" ", "-")
-        )
+        ),
+        headers=headers,
     )
-    contenido = r.content
 
+    contenido = r.content
+    if r.status_code != 200:
+        print(
+            f"Error al obtener la página para {articulo}. Status Code: {r.status_code}"
+        )
+        return []  # Retornar vacío si la solicitud falla
     soup = BeautifulSoup(contenido, "html.parser")
 
     # Última página
@@ -99,9 +115,7 @@ def mercado_libre(nombre_producto):
                     comentarios = []
                     comentario_tags = product_soup.find_all(
                         "p",
-                        {
-                            "class": "ui-review-capability__summary__plain_text__summary_container"
-                        },
+                        {"class": "ui-review-capability-comments__comment__content "},
                     )
                     if comentario_tags:
                         for comentario in comentario_tags:
@@ -189,12 +203,20 @@ def mercado_libre(nombre_producto):
                         )
 
                     # Extraer la categoría del producto
-                    categoria_tags = product_soup.find_all("li", {"class": "andes-breadcrumb__item"})
+                    categoria_tags = product_soup.find_all(
+                        "li", {"class": "andes-breadcrumb__item"}
+                    )
                     if categoria_tags:
-                        primera_categoria = categoria_tags[0].text.strip()  # Obtener solo la primera categoría
-                        data["categoria"] = primera_categoria  # Guardar solo la primera categoría
+                        primera_categoria = categoria_tags[
+                            0
+                        ].text.strip()  # Obtener solo la primera categoría
+                        data["categoria"] = (
+                            primera_categoria  # Guardar solo la primera categoría
+                        )
                     else:
-                        data["categoria"] = None  # Si no se encuentran las categorías, asignar None
+                        data["categoria"] = (
+                            None  # Si no se encuentran las categorías, asignar None
+                        )
 
                     # Extraer disponibilidad
                     stock_tag = product_soup.find(

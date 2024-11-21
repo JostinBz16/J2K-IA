@@ -1,6 +1,7 @@
 from flask import Flask, render_template, flash, redirect, url_for
 
 # from IAProcess.AppProcess.recognizeProduct import ProcessInformation
+from IAProcess.AppProcess.recognizeProduct import ProcessInformation
 from IAProcess.AppProcess.rankProduct import rankProduct
 from IAProcess.Web_Scrape.indexscrapping import scrapping
 from IAProcess.AppProcess.analizateProduct import analizateProductsProcess
@@ -32,7 +33,9 @@ def search():
 
         try:
             # Llama a la función de scraping y espera los resultados
-            result = scrapping(product_name)
+            recognize = ProcessInformation(product_name)
+            nombre_producto = recognize["nombre"]
+            result = scrapping(nombre_producto)
 
             analizateProductsProcess(
                 result

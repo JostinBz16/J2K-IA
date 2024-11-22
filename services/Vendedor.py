@@ -45,3 +45,7 @@ class VendedorService:
     def existe_vendedor(nombre):
         # En lugar de devolver True/False, devolver el objeto Vendedor o None
         return Vendedor.query.filter_by(nombre=nombre).first()
+
+    @staticmethod
+    def obtener_vendedores():
+        return Vendedor.query.all()

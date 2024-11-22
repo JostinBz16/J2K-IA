@@ -90,11 +90,13 @@ def mercado_libre(nombre_producto):
                 data["calificacion"] = rating_tag.text.strip()
             else:
                 data["calificacion"] = None  # Si no se encuentra el elemento
-                
+
             # Extraer la cantidad de votos
             votos_tag = item.find("span", {"class": "poly-reviews__total"})
             if votos_tag:
-                data["cantidad_calificacion"] = votos_tag.text.strip().replace("(", "").replace(")", "")
+                data["cantidad_calificacion"] = (
+                    votos_tag.text.strip().replace("(", "").replace(")", "")
+                )
             else:
                 data["cantidad_calificacion"] = None
 
@@ -173,8 +175,6 @@ def mercado_libre(nombre_producto):
                         data["vendidos"] = (
                             None  # Si no se encuentra la cantidad de vendidos, asignar None
                         )
-
-                        
 
                     # Extraer la descripción del producto
                     descripcion_tag = product_soup.find(

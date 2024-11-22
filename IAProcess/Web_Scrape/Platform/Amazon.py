@@ -102,7 +102,7 @@ def buscar_productos_amazon(query):
                     data["calificacion"] = calificacion.text.strip()
                 else:
                     data["calificacion"] = None
-                    
+
                 # Extraer la cantidad de votos del producto
                 cantidad_votos = item.find("span", {"class": "a-size-base"})
                 if cantidad_votos:
@@ -164,7 +164,7 @@ def buscar_productos_amazon(query):
                         # Buscar el primer <li> dentro del <ul> y luego el <span> dentro del <a>
                         # Extraer categoría específica desde el div correcto
                         # Extraer categoría general desde el div de departamentos
-                        
+
                         # Extraer disponibilidad
                         disponibilidad_tag = product_soup.find(
                             "span", {"class": "a-size-medium"}
@@ -175,7 +175,9 @@ def buscar_productos_amazon(query):
                             data["disponible"] = None
 
                         # Extraer stock disponible
-                        stock_tag = product_soup.find("span", {"class": "a-size-medium"})
+                        stock_tag = product_soup.find(
+                            "span", {"class": "a-size-medium"}
+                        )
                         if stock_tag:
                             data["disponible"] = True
                             data["stock"] = 1

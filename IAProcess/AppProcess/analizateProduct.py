@@ -42,6 +42,8 @@ def analizateProductsProcess(products):
                 or product.get("vendedor") in [None, ""]
                 or product.get("link") in [None, ""]
                 or product.get("categoria") in [None, ""]
+                or product.get("valoracion") in [None, ""]
+                or product.get("cantidad_valoracion") in [None, ""]
             ):
                 continue
 

@@ -22,12 +22,8 @@ class Detalle(db.Model):
         categoria_id,
         valoracion,
         cantida_valoracion,
-        # comentarios_positivos,
-        # comentarios_negativos,
     ):
         self.producto_id = producto_id
         self.categoria_id = categoria_id
         self.valoracion = valoracion
         self.cantida_valoracion = cantida_valoracion
-        # self.comentarios_positivos = comentarios_positivos
-        # self.comentarios_negativos = comentarios_negativos

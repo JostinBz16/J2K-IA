@@ -1,5 +1,6 @@
 from models.producto import Producto
 from utils.db import db
+from flask import session
 
 
 class ProductoService:
@@ -11,7 +12,6 @@ class ProductoService:
         stock,
         image_url,
         url_producto,
-        # valoracion,
         disponible,
         vendedor_id,
     ):
@@ -52,11 +52,6 @@ class ProductoService:
     def buscar_producto_por_nombre(nombre_producto):
         producto = Producto.query.filter_by(nombre=nombre_producto).first()
         return producto
-
-    @staticmethod
-    def buscartodos():
-        productos = Producto.query.all()
-        return productos
 
     @staticmethod
     def modificar_producto(
@@ -118,3 +113,17 @@ class ProductoService:
         return Producto.query.filter(
             (Producto.nombre == nombre) and (Producto.vendedor_id == vendedor.id)
         ).first()
+
+    @staticmethod
+    def buscartodos():
+        return Producto.query.all()
+
+    @staticmethod
+    def set_product_name(product_name):
+        """Almacena el nombre del producto en la sesión"""
+        session["product_name"] = product_name
+
+    @staticmethod
+    def get_product_name():
+        """Recupera el nombre del producto almacenado"""
+        return session.get("product_name")

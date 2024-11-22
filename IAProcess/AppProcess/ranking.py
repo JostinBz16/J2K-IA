@@ -1,8 +1,7 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
-from services.Producto import ProductoService
-from services.Vendedor import VendedorService
+from services import ProductoService, VendedorService
 from services.Detalles import DetallesService
 
 
@@ -14,9 +13,7 @@ def recomendar_productos(descripcion_usuario):
     :return: Lista de productos recomendados con su puntaje de recomendación.
     """
     # 1. Obtener todos los productos desde la base de datos
-    productos = (
-        ProductoService.buscartodos()
-    )  # Método que obtiene todos los productos
+    productos = ProductoService.buscartodos()  # Método que obtiene todos los productos
     productos_descripciones = [producto.descripcion for producto in productos]
 
     # Preprocesamos las descripciones de los productos y la descripción del usuario
@@ -122,8 +119,10 @@ def recomendar_productos(descripcion_usuario):
     return productos_finales_detalle
 
 
-descripcion_usuario = input("Ingrese la descripción del producto: ")
-productos_recomendados = recomendar_productos(descripcion_usuario)
+# descripcion_usuario = input("Ingrese la descripción del producto: ")
+# productos_recomendados = recomendar_productos(descripcion_usuario)
 
-for producto in productos_recomendados:
-    print(f"Producto: {producto['producto']}, Puntaje: {producto['puntaje']}, Precio: {producto['precio']}, Valoración: {producto['valoracion']}, Vendedor: {producto['vendedor']}")
+# for producto in productos_recomendados:
+#     print(
+#         f"Producto: {producto['producto']}, Puntaje: {producto['puntaje']}, Precio: {producto['precio']}, Valoración: {producto['valoracion']}, Vendedor: {producto['vendedor']}"
+#     )

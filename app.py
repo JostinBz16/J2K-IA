@@ -1,12 +1,14 @@
-from flask import Flask, render_template, flash, redirect, url_for
+from flask import Flask, render_template, flash, redirect, url_for, request
+import traceback
 
 # from IAProcess.AppProcess.recognizeProduct import ProcessInformation
 from IAProcess.AppProcess.recognizeProduct import ProcessInformation
-from IAProcess.AppProcess.rankProduct import rankProduct
+from IAProcess.AppProcess.ranking import recomendar_productos
 from IAProcess.Web_Scrape.indexscrapping import scrapping
 from IAProcess.AppProcess.analizateProduct import analizateProductsProcess
 from config.config import Config
 from templates.formsApp.form import FormSearchProduct
+from services.Producto import ProductoService
 from utils.db import db  # Importa db desde utils/db.py
 
 app = Flask(__name__)
@@ -30,7 +32,7 @@ def search():
 
     if form.validate_on_submit():
         product_name = form.productName.data
-
+        ProductoService.set_product_name(product_name)
         try:
             # Llama a la función de scraping y espera los resultados
             recognize = ProcessInformation(product_name)
@@ -40,6 +42,10 @@ def search():
             analizateProductsProcess(
                 result
             )  # Obtiene los productos de la base de datos
+
+            # Redirige a la página de productos con el nombre del producto
+            return redirect(url_for("products"))
+
         except Exception as e:
             error_message = f"Ocurrió un error inesperado: {str(e)}"
 
@@ -49,16 +55,23 @@ def search():
 @app.route("/products")
 def products():
     try:
-        # products = (
-        #     Producto.query.all()
-        # )  # Obtiene todos los productos de la base de datos
-        ranked_products = rankProduct(
-            [product.to_dict() for product in products]
-        )  # Asegúrate de tener un método to_dict en tu modelo
-        return render_template("products.html", productos=ranked_products)
+        # Obtiene el `product_name` desde los argumentos de la URL
+        product_name = ProductoService.get_product_name()
+
+        if product_name:
+            with app.app_context():
+                ranked_products = recomendar_productos(
+                    product_name
+                )  # Procesa recomendaciones con el nombre del producto
+
+            # Renderiza los productos recomendados
+            return render_template(
+                "products.html", productos=ranked_products, product_name=product_name
+            )
     except Exception as e:
         flash(f"Ocurrió un error al obtener los productos: {str(e)}", "danger")
-        return redirect(url_for("index"))
+        traceback.print_exc()
+        # return redirect(url_for("index"))
 
 
 @app.route("/products/details/<int:id>")

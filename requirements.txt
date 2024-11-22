@@ -13,3 +13,4 @@ torch
 google-generativeai
 scikit-learn
 faiss-cpu  # Solo si planeas usar búsqueda por similitud rápida
+

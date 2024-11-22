@@ -35,26 +35,30 @@ def analizateProductsProcess(products):
 
         for product in products:
             if (
-                (product["nombre"] is [None, ""])
-                or (product["precio"] is [None, ""])
-                or (product["calificacion"] is [None, ""])
-                or (product["cantidad_calificacion"] is [None, ""])
-                or (product["vendedor"] is [None, ""])
-                or (product["link"] is [None, ""])
+                product.get("nombre") in [None, ""]
+                or product.get("precio") in [None, ""]
+                or product.get("calificacion") in [None, ""]
+                or product.get("cantidad_calificacion") in [None, ""]
+                or product.get("vendedor") in [None, ""]
+                or product.get("link") in [None, ""]
+                or product.get("categoria") in [None, ""]
+                or product.get("valoracion") in [None, ""]
+                or product.get("cantidad_valoracion") in [None, ""]
             ):
                 continue
+
             else:
                 # Verificar si el vendedor ya existe en la base de datos
                 print(product["vendedor"])
                 vendedor = VendedorService.existe_vendedor(product["vendedor"])
                 valoracion = (
-                    float(product["calificacion"])
+                    (product["calificacion"])
                     if product["calificacion"] not in [None, "", "null"]
                     else 0.0
                 )
 
                 cantidad_valoracion = (
-                    int(product["cantidad_calificacion"])
+                    (product["cantidad_calificacion"])
                     if product["cantidad_calificacion"] not in [None, "", "null"]
                     else 0
                 )
@@ -75,7 +79,7 @@ def analizateProductsProcess(products):
 
                 # Verificar si el producto ya existe
                 existing_product = ProductoService.existe_producto(
-                    product["nombre_articulo"],
+                    product["nombre"],
                     new_vendedor.id,  # Usar el id del vendedor actual
                 )
 
@@ -88,7 +92,7 @@ def analizateProductsProcess(products):
 
                     # Usar el servicio para agregar el nuevo producto
                     ProductoService.agregar_producto(
-                        nombre=product["nombre_articulo"],
+                        nombre=product["nombre"],
                         descripcion=product["descripcion"],
                         precio=precio_actual,
                         stock=product["stock"],
@@ -113,7 +117,7 @@ def analizateProductsProcess(products):
 
                 # Ahora obtenemos el producto recién agregado o verificado
                 product_exists = ProductoService.existe_producto(
-                    product["nombre_articulo"],
+                    product["nombre"],
                     new_vendedor.id,  # Usar el id del vendedor actual
                 )
 

@@ -55,23 +55,21 @@ def search():
 @app.route("/products")
 def products():
     try:
-        # Obtiene el `product_name` desde los argumentos de la URL
+        # Obtiene el parámetro 'product_name' de la URL
         product_name = ProductoService.get_product_name()
 
-        if product_name:
-            with app.app_context():
-                ranked_products = recomendar_productos(
-                    product_name
-                )  # Procesa recomendaciones con el nombre del producto
+        # Procesa las recomendaciones de productos
+        ranked_products = recomendar_productos(product_name)
 
-            # Renderiza los productos recomendados
-            return render_template(
-                "products.html", productos=ranked_products, product_name=product_name
-            )
+        # Renderiza los productos recomendados
+        return render_template(
+            "products.html", productos=ranked_products, product_name=product_name
+        )
+
     except Exception as e:
         flash(f"Ocurrió un error al obtener los productos: {str(e)}", "danger")
         traceback.print_exc()
-        # return redirect(url_for("index"))
+        return redirect(url_for("index"))
 
 
 @app.route("/products/details/<int:id>")

@@ -43,5 +43,4 @@ def scrapping(nombre_producto):
 
         # Esperar a que todas las tareas terminen
         event.wait()
-
     return resultados

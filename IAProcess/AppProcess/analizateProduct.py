@@ -5,7 +5,6 @@ from services.Opinion import OpinionService
 from services.Detalles import DetallesService
 from services.Categorias import CategoriaService
 from utils.db import db
-from utils.Comentarios import Comentario
 import traceback
 
 
@@ -13,18 +12,6 @@ class NoProductsFoundException(Exception):
     """Excepción personalizada para cuando no se encuentran productos"""
 
     pass
-
-
-def count_opinions(comentarios):
-    positivos = 0
-    negativos = 0
-    for opinion in comentarios:
-        result = Comentario.validar_comentario_positivo(opinion)
-        if result:
-            positivos += 1
-        else:
-            negativos += 1
-    return positivos, negativos
 
 
 def analizateProductsProcess(products):
@@ -49,7 +36,7 @@ def analizateProductsProcess(products):
 
             else:
                 # Verificar si el vendedor ya existe en la base de datos
-                print(product["vendedor"])
+                print(f"Procesando vendedor: {product['vendedor']}")
                 vendedor = VendedorService.existe_vendedor(product["vendedor"])
                 valoracion = (
                     (product["calificacion"])
@@ -73,6 +60,8 @@ def analizateProductsProcess(products):
 
                         # Agregar el vendedor
                         VendedorService.agregar_vendedor(nombre_vendedor, es_confiable)
+                        db.session.commit()  # Confirmar cambios
+                        print(f"Vendedor agregado: {nombre_vendedor}")
 
                 # Obtener el vendedor actualizado
                 new_vendedor = VendedorService.existe_vendedor(product["vendedor"])
@@ -84,7 +73,7 @@ def analizateProductsProcess(products):
                 )
 
                 if existing_product is not None:
-                    # Si el producto ya existe, puedes omitir la creación
+                    # Si el producto ya existe, omitir la creación
                     continue
                 else:
                     # Convertir los precios y crear un nuevo producto
@@ -101,6 +90,8 @@ def analizateProductsProcess(products):
                         disponible=product["disponible"],
                         vendedor_id=new_vendedor.id,  # Asegurarse de usar el id del vendedor correcto
                     )
+                    db.session.commit()  # Confirmar cambios
+                    print(f"Producto agregado: {product['nombre']}")
 
                 # Verificar si la categoría ya existe
                 categoria_exist = CategoriaService.existe_categoria(
@@ -110,6 +101,9 @@ def analizateProductsProcess(products):
                 if categoria_exist is None:
                     # Si no existe, agregarla
                     CategoriaService.agregar_categoria(nombre=product["categoria"])
+                    db.session.commit()  # Confirmar cambios
+                    print(f"Categoría agregada: {product['categoria']}")
+
                     # Obtener la categoría agregada
                     categoria_exist = CategoriaService.existe_categoria(
                         product["categoria"]
@@ -121,11 +115,6 @@ def analizateProductsProcess(products):
                     new_vendedor.id,  # Usar el id del vendedor actual
                 )
 
-                # Validar si hay comentarios antes de iterar
-                # comentarios = product.get("comentarios", [])
-                # if comentarios:
-                #     positivos, negativos = count_opinions(comentarios)
-
                 # Agregar detalles (relación entre producto y categoría)
                 DetallesService.agregar_detalles(
                     producto_id=product_exists.id,
@@ -133,15 +122,10 @@ def analizateProductsProcess(products):
                     valoracion=valoracion,
                     cantidad_valoracion=cantidad_valoracion,
                 )
-
-                # Agregar opiniones
-                # for opinion in comentarios:
-                #     OpinionService.agregar_opinion(
-                #         contenido=opinion,
-                #         producto_id=product_exists.id,  # Relacionar con el producto
-                #     )
+                db.session.commit()  # Confirmar cambios
+                print(f"Detalles agregados para el producto: {product['nombre']}")
 
     except Exception as e:
-        db.session.rollback()
+        db.session.rollback()  # Revertir cambios en caso de error
         traceback.print_exc()
         raise e

@@ -303,5 +303,5 @@ def mercado_libre(nombre_producto):
     # Mueve el retorno aquí para que devuelva todos los productos
     df = pd.DataFrame(products_array)
     print("Mercado Libre")
-    print(df)
+    # print(df)
     return products_array if products_array else []

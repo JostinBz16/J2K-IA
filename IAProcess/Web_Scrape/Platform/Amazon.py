@@ -237,7 +237,7 @@ def buscar_productos_amazon(query):
 
     # Mostrar el DataFrame con columnas truncadas, excepto la de "link"
     print("Amazon")
-    print(df)
+    # print(df)
 
     return productos_array if productos_array else []
 

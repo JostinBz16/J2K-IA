@@ -1,128 +1,250 @@
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+import sys
+import os
+import traceback
+
+# Agrega la carpeta raíz del proyecto al `sys.path`
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
+
+from sklearn.decomposition import TruncatedSVD
+from sklearn.preprocessing import StandardScaler
 import numpy as np
-from services import ProductoService, VendedorService
+import pandas as pd
+from typing import List, Dict
+from services.Producto import ProductoService
 from services.Detalles import DetallesService
+from services.Vendedor import VendedorService
 
 
-def recomendar_productos(descripcion_usuario):
-    """
-    Función que recomienda productos basados en la descripción proporcionada por el usuario.
+class CollaborativeRecommendationService:
+    def __init__(self):
+        self.svd = TruncatedSVD(n_components=100, random_state=42)
+        self.scaler = StandardScaler()
+        self.producto_service = ProductoService
+        self.detalles_service = DetallesService
+        self.vendedor_service = VendedorService
+        self.trained = False
+        self.user_product_matrix = None
+        self.productos_list = None
 
-    :param descripcion_usuario: Descripción del producto que el usuario busca.
-    :return: Lista de productos recomendados con su puntaje de recomendación.
-    """
-    # 1. Obtener todos los productos desde la base de datos
-    productos = ProductoService.buscartodos()  # Método que obtiene todos los productos
-    productos_descripciones = [producto.descripcion for producto in productos]
+    def _prepare_training_data(self):
+        """Prepara los datos de entrenamiento desde la base de datos."""
+        # Obtener todos los productos y sus detalles
+        productos = self.producto_service.buscartodos()
+        self.productos_list = productos
 
-    # Preprocesamos las descripciones de los productos y la descripción del usuario
-    def preprocesar_texto(texto):
-        return (
-            texto.lower()
-        )  # Aquí podrías agregar más preprocesamiento si es necesario
+        # Crear matriz de usuarios-productos
+        ratings_data = []
 
-    productos_descripciones = [
-        preprocesar_texto(desc) for desc in productos_descripciones
-    ]
-    descripcion_usuario = preprocesar_texto(descripcion_usuario)
+        for producto in productos:
+            detalle = self.detalles_service.buscar_detalles_por_producto(producto.id)
+            if detalle and detalle.valoracion and detalle.cantida_valoracion:
+                # Crear múltiples entradas basadas en la valoración promedio
+                for i in range(
+                    min(detalle.cantida_valoracion, 10)
+                ):  # Limitamos a 10 usuarios por producto
+                    # Añadimos algo de variación a las valoraciones para simular usuarios reales
+                    variation = np.random.normal(0, 0.5)
+                    rating = max(1, min(5, detalle.valoracion + variation))
+                    ratings_data.append(
+                        {
+                            "user_id": f"user_{producto.id}_{i}",
+                            "product_id": producto.id,
+                            "rating": rating,
+                        }
+                    )
 
-    # 2. Vectorizar las descripciones con TF-IDF
-    vectorizer = TfidfVectorizer(stop_words="english")
-    tfidf_matrix = vectorizer.fit_transform(
-        productos_descripciones + [descripcion_usuario]
-    )
+        if not ratings_data:
+            raise ValueError(
+                "No hay suficientes datos de valoraciones para entrenar el modelo"
+            )
 
-    # 3. Calcular la similitud del coseno entre la descripción proporcionada por el usuario y los productos
-    cos_sim = cosine_similarity(tfidf_matrix[-1], tfidf_matrix[:-1])
+        # Convertir a DataFrame
+        df = pd.DataFrame(ratings_data)
 
-    # 4. Obtener detalles de las valoraciones de los productos
-    detalles_productos = DetallesService.buscarTodo()
+        # Crear matriz de usuarios-productos
+        user_product_matrix = df.pivot(
+            index="user_id", columns="product_id", values="rating"
+        ).fillna(0)
 
-    # Crear matriz de valoraciones de los productos
-    productos_id = [producto.id for producto in productos]
-    matriz_valoraciones = np.zeros((len(productos_id), len(productos_id)))
+        return user_product_matrix
 
-    # Rellenar la matriz de valoraciones
-    for i, producto1 in enumerate(productos_id):
-        for j, producto2 in enumerate(productos_id):
-            if producto1 != producto2:
-                valoracion_producto1 = next(
-                    (
-                        detalle.valoracion
-                        for detalle in detalles_productos
-                        if detalle.producto_id == producto1
-                    ),
-                    0,
-                )
-                valoracion_producto2 = next(
-                    (
-                        detalle.valoracion
-                        for detalle in detalles_productos
-                        if detalle.producto_id == producto2
-                    ),
-                    0,
-                )
-                matriz_valoraciones[i, j] = valoracion_producto1 * valoracion_producto2
+    def train_model(self):
+        """Entrena el modelo colaborativo."""
+        try:
+            self.user_product_matrix = self._prepare_training_data()
 
-    # Calcular similitud entre productos
-    similitudes_productos = cosine_similarity(matriz_valoraciones)
+            # Normalizar los datos
+            matrix_scaled = self.scaler.fit_transform(self.user_product_matrix)
 
-    # 5. Obtener la confiabilidad del vendedor y el precio
-    vendedores = VendedorService.buscar_vendedor_por_id(productos[0].vendedor_id)
-    confiabilidad_vendedor = [1 if vendedor.confiable else 0 for vendedor in vendedores]
-    max_precio = max([producto.precio for producto in productos])
-    precio_normalizado = [producto.precio / max_precio for producto in productos]
+            # Aplicar SVD
+            self.svd.fit(matrix_scaled)
 
-    # 6. Combinación ponderada de todos los factores
-    productos_recomendados = []
-    for i, producto in enumerate(productos):
-        # Normalización de la similitud con la descripción del usuario
-        similitud_normalizada = cos_sim[0][i]
+            self.trained = True
+        except Exception as e:
+            traceback.print_exc()
+            print(f"Error al entrenar el modelo: {e}")
+            self.trained = False
 
-        # Obtener la valoración de cada producto y normalizarla
-        max_valoraciones = max([detalle.valoracion for detalle in detalles_productos])
-        valoraciones_normalizadas = [
-            detalle.valoracion / max_valoraciones for detalle in detalles_productos
-        ]
+    def _calculate_trust_score(self, producto) -> float:
+        """Calcula el puntaje de confianza basado en el vendedor y las valoraciones."""
+        detalle = self.detalles_service.buscar_detalles_por_producto(producto.id)
+        vendedor = self.vendedor_service.buscar_vendedor_por_id(producto.vendedor_id)
 
-        # Puntaje combinado
-        puntaje_comb = (
-            similitud_normalizada * 0.4  # Similitud con la descripción del usuario
-            + valoraciones_normalizadas[i] * 0.3  # Valoración normalizada
-            + confiabilidad_vendedor[i] * 0.2  # Confiabilidad del vendedor
-            + precio_normalizado[i] * 0.1  # Precio normalizado
+        # Factor base de confianza del vendedor
+        vendedor_score = 1.5 if vendedor and vendedor.confiable else 1.0
+
+        if not detalle:
+            return vendedor_score
+
+        # Normalización de valoraciones
+        rating_score = detalle.valoracion if detalle.valoracion else 0
+        num_ratings = detalle.cantida_valoracion if detalle.cantida_valoracion else 0
+
+        # Factor de confianza basado en cantidad de valoraciones
+        rating_weight = min(num_ratings / 100, 1)  # Normalizar a máximo 1
+
+        return vendedor_score * (rating_score * 0.7 + rating_weight * 0.3)
+
+    def _filter_by_price_range(
+        self, productos: List, target_price: float, tolerance: float = 0.3
+    ) -> List:
+        """Filtra productos por rango de precio."""
+        if not target_price:
+            return productos
+
+        min_price = target_price * (1 - tolerance)
+        max_price = target_price * (1 + tolerance)
+        return [p for p in productos if min_price <= p.precio <= max_price]
+
+    def _get_user_vector(self, user_id: str):
+        """Obtiene el vector de preferencias del usuario."""
+        if user_id in self.user_product_matrix.index:
+            return self.user_product_matrix.loc[user_id].values
+        # Si es un nuevo usuario, devolver un vector promedio
+        return np.mean(self.user_product_matrix.values, axis=0)
+
+    def _predict_ratings(self, user_vector):
+        """Predice las valoraciones para todos los productos."""
+        # Normalizar el vector de usuario
+        user_vector_scaled = self.scaler.transform(user_vector.reshape(1, -1))
+
+        # Proyectar en el espacio latente y reconstruir
+        user_vector_reconstructed = self.svd.inverse_transform(
+            self.svd.transform(user_vector_scaled)
         )
 
-        productos_recomendados.append((producto, puntaje_comb))
+        # Desnormalizar
+        return self.scaler.inverse_transform(user_vector_reconstructed)[0]
 
-    # 7. Ordenamos los productos por el puntaje combinado
-    productos_recomendados = sorted(
-        productos_recomendados, key=lambda x: x[1], reverse=True
-    )
+    def recommend_products(
+        self,
+        user_id: str = "default_user",
+        target_price: float = None,
+        min_rating: float = None,
+        only_trusted_sellers: bool = False,
+        limit: int = 100,
+    ) -> List[Dict]:
+        """
+        Recomienda productos basados en filtrado colaborativo y criterios adicionales.
+        """
+        if not self.trained:
+            self.train_model()
 
-    # 8. Devolvemos los productos recomendados (puedes limitar la cantidad si es necesario)
-    productos_finales = productos_recomendados[:100]
+        if not self.trained:
+            return []
 
-    # Retornar los productos con su puntaje y detalles
-    productos_finales_detalle = [
-        {
-            "producto": producto.nombre,
-            "puntaje": puntaje,
-            "precio": producto.precio,
-            "valoracion": producto.valoracion,
-            "vendedor": producto.vendedor.nombre,
-        }
-        for producto, puntaje in productos_finales
-    ]
+        # Obtener todos los productos disponibles
+        productos = self.productos_list
+        productos = [p for p in productos if p.disponible]
 
-    return productos_finales_detalle
+        if not productos:
+            return []
+
+        # Aplicar filtros iniciales
+        if only_trusted_sellers:
+            productos = [
+                p
+                for p in productos
+                if self.vendedor_service.buscar_vendedor_por_id(p.vendedor_id).confiable
+            ]
+
+        if min_rating:
+            productos = [
+                p
+                for p in productos
+                if self.detalles_service.buscar_detalles_por_producto(p.id)
+                and self.detalles_service.buscar_detalles_por_producto(p.id).valoracion
+                >= min_rating
+            ]
+
+        if target_price:
+            productos = self._filter_by_price_range(productos, target_price)
+
+        if not productos:
+            return []
+
+        # Obtener predicciones para el usuario
+        user_vector = self._get_user_vector(user_id)
+        predicted_ratings = self._predict_ratings(user_vector)
+
+        # Calcular scores finales
+        predictions = []
+        for idx, producto in enumerate(self.productos_list):
+            if producto in productos:  # Solo procesar productos que pasaron los filtros
+                trust_score = self._calculate_trust_score(producto)
+                predicted_rating = predicted_ratings[idx]
+
+                # Combinar predicción con score de confianza
+                final_score = predicted_rating * 0.6 + trust_score * 0.4
+
+                predictions.append({"producto": producto, "score": final_score})
+
+        # Ordenar por puntaje final
+        recommended_products = sorted(
+            predictions, key=lambda x: x["score"], reverse=True
+        )[:limit]
+
+        # Formatear resultados
+        return [
+            {
+                "id": item["producto"].id,
+                "nombre": item["producto"].nombre,
+                "precio": item["producto"].precio,
+                "descripcion": item["producto"].descripcion,
+                "image_url": item["producto"].image_url,
+                "url_producto": item["producto"].url_producto,
+                "vendedor": self.vendedor_service.buscar_vendedor_por_id(
+                    item["producto"].vendedor_id
+                ).nombre,
+                "valoracion": (
+                    self.detalles_service.buscar_detalles_por_producto(
+                        item["producto"].id
+                    ).valoracion
+                    if self.detalles_service.buscar_detalles_por_producto(
+                        item["producto"].id
+                    )
+                    else None
+                ),
+                "num_valoraciones": (
+                    self.detalles_service.buscar_detalles_por_producto(
+                        item["producto"].id
+                    ).cantida_valoracion
+                    if self.detalles_service.buscar_detalles_por_producto(
+                        item["producto"].id
+                    )
+                    else None
+                ),
+                "score": item["score"],
+            }
+            for item in recommended_products
+        ]
 
 
-# descripcion_usuario = input("Ingrese la descripción del producto: ")
-# productos_recomendados = recomendar_productos(descripcion_usuario)
-
-# for producto in productos_recomendados:
-#     print(
-#         f"Producto: {producto['producto']}, Puntaje: {producto['puntaje']}, Precio: {producto['precio']}, Valoración: {producto['valoracion']}, Vendedor: {producto['vendedor']}"
-#     )
+# Función para usar en la ruta de Flask
+def recomendar_productos(user_id: str = "default_user", limit: int = 100) -> List[Dict]:
+    """
+    Función para usar directamente en las rutas de Flask.
+    """
+    recommender = CollaborativeRecommendationService()
+    return recommender.recommend_products(user_id=user_id, limit=limit)

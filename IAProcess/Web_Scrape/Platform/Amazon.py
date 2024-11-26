@@ -63,6 +63,13 @@ def buscar_productos_amazon(query):
             # Extraer datos de cada producto
             for item in productos:
                 data = {}
+                
+                # Nombre del producto
+                nombre = item.find("span", {"class": "a-text-normal"})
+                if nombre:
+                    data["nombre"] = nombre.text.strip()
+                else:
+                    data["nombre"] = None
 
                 # Precio en dólares
                 precio = item.find("span", {"class": "a-offscreen"})
@@ -97,7 +104,7 @@ def buscar_productos_amazon(query):
                 data["link"] = f"https://www.amazon.com{enlace_relativo}"
 
                 # Calificación del producto
-                calificacion = item.find("span", {"class": "a-size-base"})
+                calificacion = item.find("span", {"class": "a-size-base a-color-base"})
                 if calificacion:
                     data["calificacion"] = calificacion.text.strip()
                 else:
@@ -121,14 +128,11 @@ def buscar_productos_amazon(query):
                         time.sleep(0.5)
 
                         # Nombre del producto
-                        nombre_articulo_tag = product_soup.find(
-                            "h1", {"id": "title"}
-                        ).find("span")
-                        data["nombre"] = (
-                            nombre_articulo_tag.text.strip()
-                            if nombre_articulo_tag
-                            else None
-                        )
+                        # nombre_articulo_tag = product_soup.find("h1", {"id": "title"}).find("span")
+                        # data["nombre"] = (nombre_articulo_tag.text.strip()
+                        #     if nombre_articulo_tag
+                        #     else None
+                        # )
 
                         # Extraer la imagen del producto
                         imagen_tag = product_soup.find(
@@ -205,20 +209,18 @@ def buscar_productos_amazon(query):
                 productos_array.append(data)
 
             # Verificar si hay más páginas
-            siguiente_pagina = soup.find(
-                "a",
-                {
-                    "class": "s-pagination-item s-pagination-next s-pagination-button s-pagination-separator"
-                },
-            )
+            siguiente_pagina = soup.find("a", {"class": "s-pagination-item s-pagination-next"})
             if siguiente_pagina:
+                siguiente_url = "https://www.amazon.com" + siguiente_pagina['href']
                 pagina += 1
                 time.sleep(random.uniform(1, 3))  # Espera entre páginas
+                response = requests.get(siguiente_url, headers=headers)  # Realiza la solicitud a la nueva página
+                soup = BeautifulSoup(response.text, 'html.parser')  # Actualiza el objeto BeautifulSoup
             else:
-
                 break
 
-        elif response.status_code == 503:
+
+        elif response.status_code == 503:   
             # Pausa creciente en caso de error 503
             espera = 2**pagina
             print(f"503 Error. Reintentando en {espera} segundos...")
@@ -237,7 +239,7 @@ def buscar_productos_amazon(query):
 
     # Mostrar el DataFrame con columnas truncadas, excepto la de "link"
     print("Amazon")
-    # print(df)
+    print(df)
 
     return productos_array if productos_array else []
 

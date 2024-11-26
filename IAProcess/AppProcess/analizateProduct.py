@@ -1,7 +1,6 @@
 from utils.convert import Convert  # Importa desde extensiones
 from services.Producto import ProductoService
 from services.Vendedor import VendedorService
-from services.Opinion import OpinionService
 from services.Detalles import DetallesService
 from services.Categorias import CategoriaService
 from utils.db import db
@@ -13,7 +12,6 @@ class NoProductsFoundException(Exception):
 
     pass
 
-
 def analizateProductsProcess(products):
     try:
         # Verifica si la lista de productos no está vacía
@@ -22,21 +20,19 @@ def analizateProductsProcess(products):
 
         for product in products:
             if (
-                product.get("nombre") in [None, ""]
-                or product.get("precio") in [None, ""]
-                or product.get("calificacion") in [None, ""]
-                or product.get("cantidad_calificacion") in [None, ""]
-                or product.get("vendedor") in [None, ""]
-                or product.get("link") in [None, ""]
-                or product.get("categoria") in [None, ""]
-                or product.get("valoracion") in [None, ""]
-                or product.get("cantidad_valoracion") in [None, ""]
+                product["nombre"] is None
+                or product["precio"] is None
+                or product["calificacion"] is None
+                or product["cantidad_calificacion"] is None
+                or product["vendedor"] is None
+                or product["link"] is None
+                or product["categoria"] is None
             ):
                 continue
 
             else:
                 # Verificar si el vendedor ya existe en la base de datos
-                print(f"Procesando vendedor: {product['vendedor']}")
+                print(product["vendedor"])
                 vendedor = VendedorService.existe_vendedor(product["vendedor"])
                 valoracion = (
                     (product["calificacion"])
@@ -44,8 +40,7 @@ def analizateProductsProcess(products):
                     else 0.0
                 )
 
-                cantidad_valoracion = (
-                    (product["cantidad_calificacion"])
+                cantidad_valoracion = ((product["cantidad_calificacion"])
                     if product["cantidad_calificacion"] not in [None, "", "null"]
                     else 0
                 )
@@ -60,8 +55,6 @@ def analizateProductsProcess(products):
 
                         # Agregar el vendedor
                         VendedorService.agregar_vendedor(nombre_vendedor, es_confiable)
-                        db.session.commit()  # Confirmar cambios
-                        print(f"Vendedor agregado: {nombre_vendedor}")
 
                 # Obtener el vendedor actualizado
                 new_vendedor = VendedorService.existe_vendedor(product["vendedor"])
@@ -73,7 +66,7 @@ def analizateProductsProcess(products):
                 )
 
                 if existing_product is not None:
-                    # Si el producto ya existe, omitir la creación
+                    # Si el producto ya existe, puedes omitir la creación
                     continue
                 else:
                     # Convertir los precios y crear un nuevo producto
@@ -90,8 +83,6 @@ def analizateProductsProcess(products):
                         disponible=product["disponible"],
                         vendedor_id=new_vendedor.id,  # Asegurarse de usar el id del vendedor correcto
                     )
-                    db.session.commit()  # Confirmar cambios
-                    print(f"Producto agregado: {product['nombre']}")
 
                 # Verificar si la categoría ya existe
                 categoria_exist = CategoriaService.existe_categoria(
@@ -101,9 +92,6 @@ def analizateProductsProcess(products):
                 if categoria_exist is None:
                     # Si no existe, agregarla
                     CategoriaService.agregar_categoria(nombre=product["categoria"])
-                    db.session.commit()  # Confirmar cambios
-                    print(f"Categoría agregada: {product['categoria']}")
-
                     # Obtener la categoría agregada
                     categoria_exist = CategoriaService.existe_categoria(
                         product["categoria"]
@@ -122,10 +110,10 @@ def analizateProductsProcess(products):
                     valoracion=valoracion,
                     cantidad_valoracion=cantidad_valoracion,
                 )
-                db.session.commit()  # Confirmar cambios
-                print(f"Detalles agregados para el producto: {product['nombre']}")
-
+                
+                # Confirmar transacciones
+        db.session.commit()
     except Exception as e:
-        db.session.rollback()  # Revertir cambios en caso de error
+        db.session.rollback()
         traceback.print_exc()
         raise e

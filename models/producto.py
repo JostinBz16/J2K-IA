@@ -16,9 +16,6 @@ class Producto(db.Model):
 
     # Clave foránea para asociar el producto con un vendedor
     vendedor_id = db.Column(db.Integer, db.ForeignKey("vendedores.id"), nullable=False)
-
-    # Relación uno a muchos con Opiniones
-    opiniones = db.relationship("Opinion", backref="producto", lazy=True)
     detalles = db.relationship("Detalle", backref="producto", lazy=True)
 
     def __init__(
@@ -29,7 +26,6 @@ class Producto(db.Model):
         stock,
         image_url,
         url_producto,
-        # valoracion,
         disponible,
         vendedor_id,
     ):
@@ -39,7 +35,6 @@ class Producto(db.Model):
         self.stock = stock
         self.image_url = image_url
         self.url_producto = url_producto
-        # self.valoracion = valoracion
         self.disponible = disponible
         self.vendedor_id = vendedor_id
 

@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
+import json
 import random
 
 
@@ -304,5 +305,6 @@ def mercado_libre(nombre_producto):
     # Mueve el retorno aquí para que devuelva todos los productos
     df = pd.DataFrame(products_array)
     print("Mercado Libre")
-    print(df)
+    with open("libre.json", "w", encoding="utf-8") as f:
+        json.dump(products_array, f, indent=4, ensure_ascii=False)
     return products_array if products_array else []

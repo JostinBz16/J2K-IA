@@ -4,7 +4,6 @@ from models.categoria import Categoria
 from models.detalle import Detalle
 from models.producto import Producto
 from models.vendedor import Vendedor
-from models.opinion import Opinion
 
 with app.app_context():
     try:

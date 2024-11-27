@@ -1,30 +1,32 @@
-import traceback
-from sklearn.decomposition import TruncatedSVD
-from sklearn.preprocessing import StandardScaler
+import spacy
 import numpy as np
 import pandas as pd
-from typing import List, Dict
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import TruncatedSVD
 from services.Producto import ProductoService
 from services.Detalles import DetallesService
 from services.Vendedor import VendedorService
+from IAProcess.AppProcess.recognizeProduct import ProcessInformation
+import traceback
+
+# Cargar el modelo en español
+nlp = spacy.load("es_core_news_sm")
 
 
 class CollaborativeRecommendationService:
     def __init__(self):
         self.svd = None
         self.scaler = StandardScaler()
-        self.producto_service = ProductoService
-        self.detalles_service = DetallesService
-        self.vendedor_service = VendedorService
+        self.producto_service = ProductoService()
+        self.detalles_service = DetallesService()
+        self.vendedor_service = VendedorService()
         self.trained = False
         self.user_product_matrix = None
         self.productos_list = None
 
     def _prepare_training_data(self):
         """Prepara los datos de entrenamiento desde la base de datos."""
-        # Obtener todos los productos y sus detalles
         productos = self.producto_service.buscartodos()
-        count = len(productos)
         self.productos_list = productos
 
         # Crear matriz de usuarios-productos
@@ -33,11 +35,9 @@ class CollaborativeRecommendationService:
         for producto in productos:
             detalle = self.detalles_service.buscar_detalles_por_producto(producto.id)
             if detalle and detalle.valoracion and detalle.cantida_valoracion:
-                # Crear múltiples entradas basadas en la valoración promedio
                 for i in range(
                     min(detalle.cantida_valoracion, 10)
                 ):  # Limitamos a 10 usuarios por producto
-                    # Añadimos algo de variación a las valoraciones para simular usuarios reales
                     variation = np.random.normal(0, 0.5)
                     rating = max(1, min(5, detalle.valoracion + variation))
                     ratings_data.append(
@@ -53,10 +53,7 @@ class CollaborativeRecommendationService:
                 "No hay suficientes datos de valoraciones para entrenar el modelo"
             )
 
-        # Convertir a DataFrame
         df = pd.DataFrame(ratings_data)
-
-        # Crear matriz de usuarios-productos
         user_product_matrix = df.pivot(
             index="user_id", columns="product_id", values="rating"
         ).fillna(0)
@@ -67,22 +64,11 @@ class CollaborativeRecommendationService:
         """Entrena el modelo colaborativo."""
         try:
             self.user_product_matrix = self._prepare_training_data()
-
-            # Obtener la cantidad de productos (columnas)
             n_features = self.user_product_matrix.shape[1]
-
-            # Ajustar dinámicamente el número de componentes
             n_components = min(100, n_features)
-
-            # Inicializar SVD con n_components dinámico
             self.svd = TruncatedSVD(n_components=n_components, random_state=42)
-
-            # Normalizar los datos
             matrix_scaled = self.scaler.fit_transform(self.user_product_matrix)
-
-            # Entrenar SVD
             self.svd.fit(matrix_scaled)
-
             self.trained = True
         except Exception as e:
             traceback.print_exc()
@@ -94,24 +80,18 @@ class CollaborativeRecommendationService:
         detalle = self.detalles_service.buscar_detalles_por_producto(producto.id)
         vendedor = self.vendedor_service.buscar_vendedor_por_id(producto.vendedor_id)
 
-        # Factor base de confianza del vendedor
         vendedor_score = 1.5 if vendedor and vendedor.confiable else 1.0
 
         if not detalle:
             return vendedor_score
 
-        # Normalización de valoraciones
         rating_score = detalle.valoracion if detalle.valoracion else 0
         num_ratings = detalle.cantida_valoracion if detalle.cantida_valoracion else 0
-
-        # Factor de confianza basado en cantidad de valoraciones
-        rating_weight = min(num_ratings / 100, 1)  # Normalizar a máximo 1
+        rating_weight = min(num_ratings / 100, 1)
 
         return vendedor_score * (rating_score * 0.7 + rating_weight * 0.3)
 
-    def _filter_by_price_range(
-        self, productos: List, target_price: float, tolerance: float = 0.3
-    ) -> List:
+    def _filter_by_price_range(self, productos, target_price, tolerance=0.3):
         """Filtra productos por rango de precio."""
         if not target_price:
             return productos
@@ -120,51 +100,71 @@ class CollaborativeRecommendationService:
         max_price = target_price * (1 + tolerance)
         return [p for p in productos if min_price <= p.precio <= max_price]
 
-    def _get_user_vector(self, user_id: str):
+    def _get_user_vector(self, user_id):
         """Obtiene el vector de preferencias del usuario."""
         if user_id in self.user_product_matrix.index:
             return self.user_product_matrix.loc[user_id].values
-        # Si es un nuevo usuario, devolver un vector promedio
         return np.mean(self.user_product_matrix.values, axis=0)
 
-    def _predict_ratings(self, user_vector):
-        """Predice las valoraciones para todos los productos."""
-        # Normalizar el vector de usuario
+    def _predict_ratings(self, user_vector, filtered_product_indices):
+        """Predice las valoraciones solo para los productos filtrados."""
         user_vector_scaled = self.scaler.transform(user_vector.reshape(1, -1))
-
-        # Proyectar en el espacio latente y reconstruir
         user_vector_reconstructed = self.svd.inverse_transform(
             self.svd.transform(user_vector_scaled)
         )
-
-        # Desnormalizar
-        return self.scaler.inverse_transform(user_vector_reconstructed)[0]
+        predicted_ratings = self.scaler.inverse_transform(user_vector_reconstructed)[0]
+        return {
+            idx: predicted_ratings[idx]
+            for idx in filtered_product_indices
+            if idx < len(predicted_ratings)
+        }
 
     def recommend_products(
         self,
-        user_id: str = "default_user",
-        target_price: float = None,
-        min_rating: float = None,
-        only_trusted_sellers: bool = False,
-        limit: int = 100,
-    ) -> List[Dict]:
+        user_id="default_user",
+        target_price=None,
+        min_rating=None,
+        only_trusted_sellers=False,
+        limit=100,
+        enunciado_usuario=None,
+    ):
         """
         Recomienda productos basados en filtrado colaborativo y criterios adicionales.
         """
         if not self.trained:
             self.train_model()
-
         if not self.trained:
             return []
 
-        # Obtener todos los productos disponibles
         productos = self.productos_list
         productos = [p for p in productos if p.disponible]
 
         if not productos:
             return []
 
-        # Aplicar filtros iniciales
+        if enunciado_usuario:
+            product_info = ProcessInformation(enunciado_usuario)
+            nombre_producto = product_info["nombre"]
+            caracteristicas_deseadas = product_info["caracteristicas"]
+
+            if nombre_producto:
+                productos = [
+                    p
+                    for p in productos
+                    if p.descripcion and nombre_producto in p.descripcion.lower()
+                ]
+
+            # Filtrar por características
+            for categoria, valor in caracteristicas_deseadas.items():
+                productos = [
+                    p
+                    for p in productos
+                    if p.descripcion and valor.lower() in p.descripcion.lower()
+                ]
+
+        if not productos:
+            return []
+
         if only_trusted_sellers:
             productos = [
                 p
@@ -187,28 +187,25 @@ class CollaborativeRecommendationService:
         if not productos:
             return []
 
-        # Obtener predicciones para el usuario
+        filtered_product_indices = [
+            self.productos_list.index(producto) for producto in productos
+        ]
+
         user_vector = self._get_user_vector(user_id)
-        predicted_ratings = self._predict_ratings(user_vector)
+        predicted_ratings = self._predict_ratings(user_vector, filtered_product_indices)
 
-        # Calcular scores finales
         predictions = []
-        for idx, producto in enumerate(self.productos_list):
-            if producto in productos:  # Solo procesar productos que pasaron los filtros
-                trust_score = self._calculate_trust_score(producto)
-                predicted_rating = predicted_ratings[idx]
+        for producto in productos:
+            idx = self.productos_list.index(producto)
+            trust_score = self._calculate_trust_score(producto)
+            predicted_rating = predicted_ratings.get(idx, 0)
+            final_score = predicted_rating * 0.6 + trust_score * 0.4
+            predictions.append({"producto": producto, "score": final_score})
 
-                # Combinar predicción con score de confianza
-                final_score = predicted_rating * 0.6 + trust_score * 0.4
-
-                predictions.append({"producto": producto, "score": final_score})
-
-        # Ordenar por puntaje final
         recommended_products = sorted(
             predictions, key=lambda x: x["score"], reverse=True
         )[:limit]
 
-        # Formatear resultados
         return [
             {
                 "id": item["producto"].id,
@@ -245,9 +242,8 @@ class CollaborativeRecommendationService:
 
 
 # Función para usar en la ruta de Flask
-def recomendar_productos(user_id: str = "default_user", limit: int = 100) -> List[Dict]:
-    """
-    Función para usar directamente en las rutas de Flask.
-    """
+def recomendar_productos(user_id="default_user", limit=100, enunciado_usuario=None):
     recommender = CollaborativeRecommendationService()
-    return recommender.recommend_products(user_id=user_id, limit=limit)
+    return recommender.recommend_products(
+        user_id=user_id, limit=limit, enunciado_usuario=enunciado_usuario
+    )

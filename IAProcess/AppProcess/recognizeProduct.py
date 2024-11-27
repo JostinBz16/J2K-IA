@@ -226,6 +226,7 @@ def ProcessInformation(enunciado):
                 categoria_actual
             ] = valor_caracteristica
 
+    print(producto_caracteristicas)
     return producto_caracteristicas  # Retornamos el diccionario con el nombre del producto y sus características
 
 

@@ -3,6 +3,7 @@ from services.Producto import ProductoService
 from services.Vendedor import VendedorService
 from services.Detalles import DetallesService
 from utils.db import db
+import math
 import traceback
 
 
@@ -19,86 +20,91 @@ def analizateProductsProcess(products):
             raise NoProductsFoundException("No se encontraron productos")
 
         for product in products:
+            # Usar .get() para evitar KeyError
+            nombre = product.get("nombre")
+            precio = product.get("precio")
+            calificacion = product.get("calificacion")
+            cantidad_calificacion = product.get("cantidad_calificacion")
+            vendedor = product.get("vendedor")
+            link = product.get("link")
+
+            try:
+                calificacion = int(calificacion) if calificacion is not None else None
+                cantidad_calificacion = (
+                    float(cantidad_calificacion)
+                    if cantidad_calificacion is not None
+                    else None
+                )
+            except ValueError:
+                calificacion = None
+                cantidad_calificacion = None
+
+            # Validaciones de los valores
             if (
-                product["nombre"] is None
-                or product["precio"] is None
-                or product["calificacion"] is None
-                or product["cantidad_calificacion"] is None
-                or product["vendedor"] is None
-                or product["link"] is None
+                nombre is None
+                or precio is None
+                or calificacion is None
+                or math.isnan(calificacion)
+                or cantidad_calificacion is None
+                or math.isnan(cantidad_calificacion)
+                or vendedor is None
+                or link is None
             ):
                 continue
 
+            # Verificar si el vendedor ya existe en la base de datos
+            vendedor_obj = VendedorService.existe_vendedor(vendedor)
+            valoracion = calificacion if calificacion not in [None, "", "null"] else 0.0
+            cantidad_valoracion = (
+                cantidad_calificacion
+                if cantidad_calificacion not in [None, "", "null"]
+                else 0
+            )
+
+            if not vendedor:
+                continue
             else:
-                # Verificar si el vendedor ya existe en la base de datos
-                print(product["vendedor"])
-                vendedor = VendedorService.existe_vendedor(product["vendedor"])
-                valoracion = (
-                    (product["calificacion"])
-                    if product["calificacion"] not in [None, "", "null"]
-                    else 0.0
+                if vendedor_obj is None:
+                    es_confiable = product.get("confiable", False)
+                    VendedorService.agregar_vendedor(vendedor, es_confiable)
+
+            # Obtener el vendedor actualizado
+            new_vendedor = VendedorService.existe_vendedor(vendedor)
+
+            # Verificar si el producto ya existe
+            existing_product = ProductoService.existe_producto(
+                nombre,
+                new_vendedor.id,  # Usar el id del vendedor actual
+            )
+
+            if existing_product is not None:
+                continue
+            else:
+                precio_actual = Convert.convert_price_to_float(precio)
+                ProductoService.agregar_producto(
+                    nombre=nombre,
+                    descripcion=product.get("descripcion"),
+                    precio=precio_actual,
+                    stock=product.get("stock"),
+                    image_url=product.get("imagen"),
+                    url_producto=link,
+                    disponible=product.get("disponible", True),
+                    vendedor_id=new_vendedor.id,
                 )
 
-                cantidad_valoracion = (
-                    (product["cantidad_calificacion"])
-                    if product["cantidad_calificacion"] not in [None, "", "null"]
-                    else 0
-                )
+            # Obtener el producto recién agregado
+            product_exists = ProductoService.existe_producto(nombre, new_vendedor.id)
 
-                if product["vendedor"] == "" or product["vendedor"] is None:
-                    continue
-                else:
-                    if vendedor is None:
-                        # Validar el valor de "confiable" y asignar False si no está presente o es inválido
-                        es_confiable = product.get("confiable", False)
-                        nombre_vendedor = product["vendedor"]
+            # Agregar detalles del producto
+            DetallesService.agregar_detalles(
+                producto_id=product_exists.id,
+                valoracion=valoracion,
+                cantidad_valoracion=cantidad_valoracion,
+            )
 
-                        # Agregar el vendedor
-                        VendedorService.agregar_vendedor(nombre_vendedor, es_confiable)
-
-                # Obtener el vendedor actualizado
-                new_vendedor = VendedorService.existe_vendedor(product["vendedor"])
-
-                # Verificar si el producto ya existe
-                existing_product = ProductoService.existe_producto(
-                    product["nombre"],
-                    new_vendedor.id,  # Usar el id del vendedor actual
-                )
-
-                if existing_product is not None:
-                    # Si el producto ya existe, puedes omitir la creación
-                    continue
-                else:
-                    # Convertir los precios y crear un nuevo producto
-                    precio_actual = Convert.convert_price_to_float(product["precio"])
-
-                    # Usar el servicio para agregar el nuevo producto
-                    ProductoService.agregar_producto(
-                        nombre=product["nombre"],
-                        descripcion=product["descripcion"],
-                        precio=precio_actual,
-                        stock=product["stock"],
-                        image_url=product["imagen"],
-                        url_producto=product["link"],
-                        disponible=product["disponible"],
-                        vendedor_id=new_vendedor.id,  # Asegurarse de usar el id del vendedor correcto
-                    )
-
-                # Ahora obtenemos el producto recién agregado o verificado
-                product_exists = ProductoService.existe_producto(
-                    product["nombre"],
-                    new_vendedor.id,  # Usar el id del vendedor actual
-                )
-
-                # Agregar detalles (relación entre producto y categoría)
-                DetallesService.agregar_detalles(
-                    producto_id=product_exists.id,
-                    valoracion=valoracion,
-                    cantidad_valoracion=cantidad_valoracion,
-                )
-
-                # Confirmar transacciones
+        # Confirmar transacciones
         db.session.commit()
+
     except Exception as e:
         db.session.rollback()
         traceback.print_exc()

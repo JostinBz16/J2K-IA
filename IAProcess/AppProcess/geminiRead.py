@@ -12,6 +12,6 @@ def ProcessInformation(enunciado):
 
 
 resultado = ProcessInformation(
-    "Busco un teléfono inteligente con una buena cámara para tomar fotos de alta calidad, que tenga suficiente almacenamiento para muchas aplicaciones y fotos, y una batería que dure todo el día. También quiero que sea resistente al agua y que tenga una pantalla grande y de alta resolución para ver videos en buena calidad"
+    "Busco un teléfono xiaomi redmi note 12 color blanco de 128gb con 6gb de ram"
 )
 print(resultado)

@@ -122,17 +122,6 @@ def mercado_libre(nombre_producto):
                             None  # Si no se encuentra la imagen, asigna None
                         )
 
-                    # Extraer todos los comentarios
-                    comentarios = []
-                    comentario_tags = product_soup.find_all(
-                        "p",
-                        {"class": "ui-review-capability-comments__comment__content "},
-                    )
-                    if comentario_tags:
-                        for comentario in comentario_tags:
-                            comentarios.append(comentario.text.strip())
-                    data["comentarios"] = comentarios if comentarios else None
-
                     # Extraer el nombre del vendedor
                     vendedor_tag = product_soup.find(
                         "div", {"class": "ui-pdp-seller__header__title"}
@@ -213,22 +202,6 @@ def mercado_libre(nombre_producto):
                             False  # Si no es ni "platino" ni "Tienda Oficial"
                         )
 
-                    # Extraer la categoría del producto
-                    categoria_tags = product_soup.find_all(
-                        "li", {"class": "andes-breadcrumb__item"}
-                    )
-                    if categoria_tags:
-                        primera_categoria = categoria_tags[
-                            0
-                        ].text.strip()  # Obtener solo la primera categoría
-                        data["categoria"] = (
-                            primera_categoria  # Guardar solo la primera categoría
-                        )
-                    else:
-                        data["categoria"] = (
-                            None  # Si no se encuentran las categorías, asignar None
-                        )
-
                     # Extraer disponibilidad
                     stock_tag = product_soup.find(
                         "span", {"class": "ui-pdp-buybox__quantity__available"}
@@ -276,12 +249,10 @@ def mercado_libre(nombre_producto):
 
                 else:
                     data["imagen"] = None
-                    data["comentarios"] = None
                     data["vendedor"] = None
                     data["vendidos"] = None
                     data["descripcion"] = None
                     data["confiable"] = None
-                    data["categoria"] = None
                     data["stock"] = None
                     data["disponible"] = None
 

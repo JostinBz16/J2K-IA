@@ -1,40 +1,66 @@
-{% extends "base.html" %} {% block title %}Tu lista de productos recomendados{%
-endblock %} {% block content %}
-<div class="container mx-auto py-8">
-  <h2 class="text-4xl font-bold text-center mb-8">Productos Recomendados</h2>
-  {% if productos %}
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {% for producto in productos %}
-    <div
-      class="bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700"
-    >
-      <a href="{{ producto.url_producto }}">
-        <img
-          class="rounded-t-lg w-full h-80 object-cover"
-          src="{{ producto.image_url }}"
-          alt="{{ producto.nombre }}"
-        />
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>J2K - Tu lista de productos recomendados</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="h-screen flex flex-col bg-gray-100">
+    <div class="flex justify-between items-center max-w-3xl mx-auto">
+      <a href="{{ url_for('search') }}">
+        <h1 class="text-4xl font-bold text-blue-600">J2K - IA</h1>
       </a>
-      <div class="p-5">
-        <a href="{{ producto.url_producto }}">
-          <h5
-            class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
+    </div>
+    <div
+      class="text-center max-w-6xl flex flex-col justify-center items-center mx-auto"
+    >
+      <div class="container mx-auto py-8">
+        <h2 class="text-4xl font-bold text-center mb-8">
+          Productos Recomendados
+        </h2>
+
+        <button
+          class="mt-4 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+          onclick="window.location.href='{{ url_for('search') }}'"
+        >
+          Buscar Productos
+        </button>
+        {% if productos %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for producto in productos %}
+          <div
+            class="bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700"
           >
-            {{ producto.nombre }}
-          </h5>
-        </a>
-        <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">
-          {{ producto.descripcion }}
-        </p>
-        <p class="text-xl font-semibold text-gray-900 dark:text-white">
-          {{ producto.precio }} USD
-        </p>
+            <a href="{{ producto.url_producto }}">
+              <img
+                class="rounded-t-lg w-full h-80 object-cover"
+                src="{{ producto.image_url }}"
+                alt="{{ producto.nombre }}"
+              />
+            </a>
+            <div class="p-5">
+              <a href="{{ producto.url_producto }}">
+                <h5
+                  class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
+                >
+                  {{ producto.nombre }}
+                </h5>
+              </a>
+              <p class="text-xl font-semibold text-gray-900 dark:text-white">
+                {{ producto.precio }} COP
+              </p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <h2 class="text-center text-2xl">
+          No se encontraron productos relacionados
+        </h2>
+        {% endif %}
       </div>
     </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <h2 class="text-center text-2xl">No se encontraron productos relacionados</h2>
-  {% endif %}
-</div>
-{% endblock %}
+  </body>
+</html>

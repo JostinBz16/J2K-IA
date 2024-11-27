@@ -1,38 +1,42 @@
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>J2K - Home</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <title>J2K - Home</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-</head>
+  <body class="h-screen flex">
+    <div class="max-w-3xl flex flex-col justify-center items-center mx-auto">
+      <h1 class="text-4xl font-bold text-blue-600 mb-8">
+        ¡Bienvenido a J2K - IA!
+      </h1>
 
-<body class="h-screen flex">
-  <div class="max-w-3xl flex flex-col justify-center items-center mx-auto">
-    <h1 class="text-4xl font-bold text-blue-600 mb-8">
-      ¡Bienvenido a J2K - IA!
-    </h1>
-
-    <div>
-      <p class="text-lg text-gray-700 mb-12 text-pretty text-justify">
-        Descubre la mejor manera de encontrar productos de interés con J2K-IA.
-        Nuestra inteligencia artificial se encarga de buscar en la web y
-        mostrarte un ranking de los mejores proveedores, precios y mucho más,
-        todo en un solo lugar.<br />
-        Encuentra rápidamente el producto que necesitas y recibe
-        recomendaciones personalizadas basadas en parámetros clave como ventas
-        y reputación del vendedor. Nuestro sistema analiza y valida diferentes
-        factores para asegurarte de que tu compra sea la mejor decisión,
-        evitando arrepentimientos y garantizando una compra satisfactoria. Con
-        J2K, tu esfuerzo se reduce al mínimo y la confianza en tu elección
-        aumenta al máximo.
-      </p>
-      <div class="mt-12 flex justify-center">
-        <a href="/search" class="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">
-          Comienza tu búsquedas
-        </a>
+      <div>
+        <p class="text-lg text-gray-700 mb-12 text-pretty text-justify">
+          Descubre la mejor manera de encontrar productos de interés con J2K-IA.
+          Nuestra inteligencia artificial se encarga de buscar en la web y
+          mostrarte un ranking de los mejores proveedores, precios y mucho más,
+          todo en un solo lugar.<br />
+          Encuentra rápidamente el producto que necesitas y recibe
+          recomendaciones personalizadas basadas en parámetros clave como ventas
+          y reputación del vendedor. Nuestro sistema analiza y valida diferentes
+          factores para asegurarte de que tu compra sea la mejor decisión,
+          evitando arrepentimientos y garantizando una compra satisfactoria. Con
+          J2K, tu esfuerzo se reduce al mínimo y la confianza en tu elección
+          aumenta al máximo.
+        </p>
+        <div class="mt-12 flex justify-center">
+          <a
+            href="{{ url_for('search') }}"
+            class="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-700"
+          >
+            Comienza tu búsquedas
+          </a>
+        </div>
       </div>
     </div>
-  </div>
-</body>
-
+  </body>
 </html>

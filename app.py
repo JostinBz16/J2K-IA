@@ -26,7 +26,7 @@ def index():
 
 
 @app.route("/search", methods=["GET", "POST"])
-async def search():
+def search():
     form = FormSearchProduct()
     error_message = None  # Inicializamos el mensaje de error como None
 
@@ -59,7 +59,9 @@ def products():
         product_name = ProductoService.get_product_name()
 
         # Procesa las recomendaciones de productos
-        ranked_products = recomendar_productos(product_name)
+        ranked_products = recomendar_productos(
+            user_id="default_user", enunciado_usuario=product_name
+        )
 
         # Renderiza los productos recomendados
         return render_template(

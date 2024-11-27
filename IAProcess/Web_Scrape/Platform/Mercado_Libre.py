@@ -262,12 +262,10 @@ def mercado_libre(nombre_producto):
                     f"Error al hacer la solicitud de la imagen, comentarios, vendedor y cantidad vendida: {e}"
                 )
                 data["imagen"] = None
-                data["comentarios"] = None
                 data["vendedor"] = None
                 data["vendidos"] = None
                 data["descripcion"] = None
                 data["confiable"] = None
-                data["categoria"] = None
                 data["stock"] = None
                 data["disponible"] = None
 
@@ -276,6 +274,6 @@ def mercado_libre(nombre_producto):
     # Mueve el retorno aquí para que devuelva todos los productos
     df = pd.DataFrame(products_array)
     print("Mercado Libre")
-    with open("libre.json", "w", encoding="utf-8") as f:
-        json.dump(products_array, f, indent=4, ensure_ascii=False)
+    # with open("libre.json", "w", encoding="utf-8") as f:
+    #     json.dump(products_array, f, indent=4, ensure_ascii=False)
     return products_array if products_array else []

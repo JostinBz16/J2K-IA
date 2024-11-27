@@ -1,8 +1,9 @@
 import concurrent.futures
 import threading
+import json
 
 # Otras plataformas que quieres agregar (a futuro)
-from IAProcess.Web_Scrape.Platform.Amazon import buscar_productos_amazon
+from IAProcess.Web_Scrape.Platform.Encarguelo import encarguelo_scraping
 from IAProcess.Web_Scrape.Platform.Mercado_Libre import mercado_libre
 
 
@@ -15,7 +16,7 @@ def scrapping(nombre_producto):
 
     plataformas = [
         mercado_libre,
-        buscar_productos_amazon,
+        encarguelo_scraping,
         # otra_plataforma,
     ]
 
@@ -43,4 +44,6 @@ def scrapping(nombre_producto):
 
         # Esperar a que todas las tareas terminen
         event.wait()
+        with open("allProducts.json", "w", encoding="utf-8") as f:
+            json.dump(resultados, f, indent=4, ensure_ascii=False)
     return resultados

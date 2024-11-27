@@ -2,7 +2,6 @@ from utils.convert import Convert  # Importa desde extensiones
 from services.Producto import ProductoService
 from services.Vendedor import VendedorService
 from services.Detalles import DetallesService
-from services.Categorias import CategoriaService
 from utils.db import db
 import traceback
 
@@ -11,6 +10,7 @@ class NoProductsFoundException(Exception):
     """Excepción personalizada para cuando no se encuentran productos"""
 
     pass
+
 
 def analizateProductsProcess(products):
     try:
@@ -26,7 +26,6 @@ def analizateProductsProcess(products):
                 or product["cantidad_calificacion"] is None
                 or product["vendedor"] is None
                 or product["link"] is None
-                or product["categoria"] is None
             ):
                 continue
 
@@ -40,7 +39,8 @@ def analizateProductsProcess(products):
                     else 0.0
                 )
 
-                cantidad_valoracion = ((product["cantidad_calificacion"])
+                cantidad_valoracion = (
+                    (product["cantidad_calificacion"])
                     if product["cantidad_calificacion"] not in [None, "", "null"]
                     else 0
                 )
@@ -84,19 +84,6 @@ def analizateProductsProcess(products):
                         vendedor_id=new_vendedor.id,  # Asegurarse de usar el id del vendedor correcto
                     )
 
-                # Verificar si la categoría ya existe
-                categoria_exist = CategoriaService.existe_categoria(
-                    product["categoria"]
-                )
-
-                if categoria_exist is None:
-                    # Si no existe, agregarla
-                    CategoriaService.agregar_categoria(nombre=product["categoria"])
-                    # Obtener la categoría agregada
-                    categoria_exist = CategoriaService.existe_categoria(
-                        product["categoria"]
-                    )
-
                 # Ahora obtenemos el producto recién agregado o verificado
                 product_exists = ProductoService.existe_producto(
                     product["nombre"],
@@ -106,11 +93,10 @@ def analizateProductsProcess(products):
                 # Agregar detalles (relación entre producto y categoría)
                 DetallesService.agregar_detalles(
                     producto_id=product_exists.id,
-                    categoria_id=categoria_exist.id,  # ID de la categoría encontrada o agregada
                     valoracion=valoracion,
                     cantidad_valoracion=cantidad_valoracion,
                 )
-                
+
                 # Confirmar transacciones
         db.session.commit()
     except Exception as e:

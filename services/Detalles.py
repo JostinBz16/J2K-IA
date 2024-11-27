@@ -1,14 +1,13 @@
 from models.detalle import Detalle
 from models.producto import Producto
-from models.categoria import Categoria
 from utils.db import db
 
 
 class DetallesService:
     @staticmethod
-    def agregar_detalles(producto_id, categoria_id, valoracion, cantidad_valoracion):
+    def agregar_detalles(producto_id, valoracion, cantidad_valoracion):
         # Validar que los valores no sean nulos o vacíos
-        if not producto_id or not categoria_id:
+        if not producto_id:
             raise ValueError(
                 "El producto y la categoría no pueden ser nulos o indefinidos"
             )
@@ -18,15 +17,9 @@ class DetallesService:
         if producto is None:
             raise ValueError(f"Producto con ID {producto_id} no encontrado")
 
-        # Verificar que la categoría exista
-        categoria = Categoria.query.get(categoria_id)
-        if categoria is None:
-            raise ValueError(f"Categoría con ID {categoria_id} no encontrada")
-
         # Si todo es válido, crear el nuevo detalle
         nuevo_detalle = Detalle(
             producto_id=producto_id,
-            categoria_id=categoria_id,
             valoracion=valoracion,
             cantida_valoracion=cantidad_valoracion,
         )
@@ -46,11 +39,9 @@ class DetallesService:
         return Detalle.query.get(detalles_id)
 
     @staticmethod
-    def modificar_detalles(
-        detalles_id, id_producto, id_categoria, valoracion, cantidad_valoracion
-    ):
+    def modificar_detalles(detalles_id, id_producto, valoracion, cantidad_valoracion):
         # Validar que los valores no sean nulos o vacíos
-        if not detalles_id or not id_producto or not id_categoria:
+        if not detalles_id or not id_producto:
             raise ValueError(
                 "El ID del detalle, el ID del producto y la categoría no pueden ser nulos o indefinidos"
             )
@@ -62,7 +53,6 @@ class DetallesService:
 
         # Actualizar los valores del detalle
         detalles.producto_id = id_producto
-        detalles.categoria_id = id_categoria
         detalles.valoracion = valoracion
         detalles.cantida_valoracion = cantidad_valoracion
 
@@ -73,12 +63,6 @@ class DetallesService:
             if producto is None:
                 raise ValueError(
                     f"Producto con ID {detalles.producto_id} no encontrado"
-                )
-
-            categoria = Categoria.query.get(detalles.categoria_id)
-            if categoria is None:
-                raise ValueError(
-                    f"Categoría con ID {detalles.categoria_id} no encontrada"
                 )
 
             try:
@@ -108,9 +92,5 @@ class DetallesService:
         return Detalle.query.filter_by(producto_id=producto_id).first()
 
     @staticmethod
-    def buscar_detalles_por_categoria(categoria_id):
-        return Detalle.query.filter_by(categoria_id=categoria_id).all()
-    
-    @staticmethod
     def buscarTodo():
-        return Detalle.query.all()  
+        return Detalle.query.all()

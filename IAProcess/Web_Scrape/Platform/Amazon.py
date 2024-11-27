@@ -63,7 +63,7 @@ def buscar_productos_amazon(query):
             # Extraer datos de cada producto
             for item in productos:
                 data = {}
-                
+
                 # Nombre del producto
                 nombre = item.find("span", {"class": "a-text-normal"})
                 if nombre:
@@ -79,25 +79,6 @@ def buscar_productos_amazon(query):
                     data["precio"] = convertir_a_pesos(precio_usd)
                 else:
                     data["precio"] = None
-
-                categoria_tag = soup.find("div", {"id": "departments"})
-
-                if categoria_tag:
-                    # Buscar el primer <li> que contiene la categoría dentro de <ul>
-                    categoria_item = categoria_tag.find("li")
-                    if categoria_item:
-                        # Buscar el <span> dentro del <a> que contiene la categoría
-                        span_categoria = categoria_item.find("a").find("span")
-                        if span_categoria:
-                            data["categoria"] = (
-                                span_categoria.text.strip()
-                            )  # Guardar el texto del span
-                        else:
-                            data["categoria"] = None
-                    else:
-                        data["categoria"] = None
-                else:
-                    data["categoria"] = None
 
                 # Enlace del producto (link)
                 enlace_relativo = item.find("a", {"class": "a-link-normal"})["href"]
@@ -144,7 +125,10 @@ def buscar_productos_amazon(query):
                             data["imagen"] = None
 
                         # Extraer vendedor
-                        vendedor_tag = product_soup.find("a", {"id": "bylineInfo"})
+                        vendedor_tag = product_soup.find(
+                            "div",
+                            {"class": "offer-display-feature-text a-spacing-none "},
+                        ).span
                         if vendedor_tag:
                             vendedor_nombre = vendedor_tag.text.strip()
                             # Eliminar "Visit the" si está presente en el nombre del vendedor
@@ -194,7 +178,6 @@ def buscar_productos_amazon(query):
                         data["imagen"] = None
                         data["vendedor"] = None
                         data["descripcion"] = None
-                        data["categoria"] = None
                         data["stock"] = None
 
                 except Exception as e:
@@ -202,25 +185,29 @@ def buscar_productos_amazon(query):
                     data["imagen"] = None
                     data["vendedor"] = None
                     data["descripcion"] = None
-                    data["categoria"] = None
                     data["stock"] = None
 
                 # Agregar el producto a la lista
                 productos_array.append(data)
 
             # Verificar si hay más páginas
-            siguiente_pagina = soup.find("a", {"class": "s-pagination-item s-pagination-next"})
+            siguiente_pagina = soup.find(
+                "a", {"class": "s-pagination-item s-pagination-next"}
+            )
             if siguiente_pagina:
-                siguiente_url = "https://www.amazon.com" + siguiente_pagina['href']
+                siguiente_url = "https://www.amazon.com" + siguiente_pagina["href"]
                 pagina += 1
                 time.sleep(random.uniform(1, 3))  # Espera entre páginas
-                response = requests.get(siguiente_url, headers=headers)  # Realiza la solicitud a la nueva página
-                soup = BeautifulSoup(response.text, 'html.parser')  # Actualiza el objeto BeautifulSoup
+                response = requests.get(
+                    siguiente_url, headers=headers
+                )  # Realiza la solicitud a la nueva página
+                soup = BeautifulSoup(
+                    response.text, "html.parser"
+                )  # Actualiza el objeto BeautifulSoup
             else:
                 break
 
-
-        elif response.status_code == 503:   
+        elif response.status_code == 503:
             # Pausa creciente en caso de error 503
             espera = 2**pagina
             print(f"503 Error. Reintentando en {espera} segundos...")
@@ -234,8 +221,8 @@ def buscar_productos_amazon(query):
     df = pd.DataFrame(productos_array)
 
     # # Guardar los datos en un archivo JSON llamado amazon.json
-    # with open("amazon.json", "w", encoding="utf-8") as f:
-    #     json.dump(productos_array, f, indent=4, ensure_ascii=False)
+    with open("amazon.json", "w", encoding="utf-8") as f:
+        json.dump(productos_array, f, indent=4, ensure_ascii=False)
 
     # Mostrar el DataFrame con columnas truncadas, excepto la de "link"
     print("Amazon")

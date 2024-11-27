@@ -1,11 +1,4 @@
-import sys
-import os
 import traceback
-
-# Agrega la carpeta raíz del proyecto al `sys.path`
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import StandardScaler
 import numpy as np
@@ -18,7 +11,7 @@ from services.Vendedor import VendedorService
 
 class CollaborativeRecommendationService:
     def __init__(self):
-        self.svd = TruncatedSVD(n_components=100, random_state=42)
+        self.svd = None
         self.scaler = StandardScaler()
         self.producto_service = ProductoService
         self.detalles_service = DetallesService
@@ -31,6 +24,7 @@ class CollaborativeRecommendationService:
         """Prepara los datos de entrenamiento desde la base de datos."""
         # Obtener todos los productos y sus detalles
         productos = self.producto_service.buscartodos()
+        count = len(productos)
         self.productos_list = productos
 
         # Crear matriz de usuarios-productos
@@ -74,10 +68,19 @@ class CollaborativeRecommendationService:
         try:
             self.user_product_matrix = self._prepare_training_data()
 
+            # Obtener la cantidad de productos (columnas)
+            n_features = self.user_product_matrix.shape[1]
+
+            # Ajustar dinámicamente el número de componentes
+            n_components = min(100, n_features)
+
+            # Inicializar SVD con n_components dinámico
+            self.svd = TruncatedSVD(n_components=n_components, random_state=42)
+
             # Normalizar los datos
             matrix_scaled = self.scaler.fit_transform(self.user_product_matrix)
 
-            # Aplicar SVD
+            # Entrenar SVD
             self.svd.fit(matrix_scaled)
 
             self.trained = True

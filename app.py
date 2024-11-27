@@ -26,7 +26,7 @@ def index():
 
 
 @app.route("/search", methods=["GET", "POST"])
-async def search():
+def search():
     form = FormSearchProduct()
     error_message = None  # Inicializamos el mensaje de error como None
 
